@@ -3,14 +3,13 @@
 from functools import lru_cache
 import io
 from typing import Any, Optional, List
+from xml.dom.minidom import parseString
 
 from PIL import Image
 import requests
 import soco
 
 DEVICES = {device.player_name: device for device in soco.discover(timeout=60)}
-
-TARGET = DEVICES["Kitchen"]
 
 TRACK_INFO = None
 
@@ -20,9 +19,17 @@ class TrackInfo:
         self.album = track_info["album"]
         self.title = track_info["title"]
         self.album_art = track_info["album_art"]
+        if self.album_art is None or len(self.album_art) == 0:
+            self.album_art = fix_album_art_url(track_info)
         if self.album_art is not None and len(self.album_art) > 0:
-            self.album_art_image: Optional[List[List[int]]] = get_album_art(self.album_art)
+            try:
+                self.album_art_image: Optional[List[List[int]]] = get_album_art(self.album_art)
+            except requests.exceptions.ConnectionError as e:
+                print("Error loading Album Art")
+                print(e)
+                self.album_art_image = None
         else:
+            print("no album art url :-(")
             self.album_art_image = None
 
     def __eq__(self, other: "TrackInfo") -> bool:
@@ -38,10 +45,20 @@ class TrackInfo:
         return f"<TrackInfo {self.artist} {self.title} {self.album_art_image is not None}>"
 
 def get_current_track_info() -> Optional[TrackInfo]:
-    if TARGET.group.coordinator.get_current_transport_info()['current_transport_state'] != "PLAYING":
+    target = get_sonos_device()
+    if target is None:
+        return None
+    if target.group.coordinator.get_current_transport_info()['current_transport_state'] != "PLAYING":
         return None
 
-    return TrackInfo(TARGET.group.coordinator.get_current_track_info())
+    return TrackInfo(target.group.coordinator.get_current_track_info())
+
+def get_sonos_device() -> Optional[Any]:
+    try:
+        return DEVICES["Kitchen"]
+    except KeyError:
+        print("No device Kitchen")
+        return None
 
 def has_track_changed() -> bool:
     global TRACK_INFO
@@ -58,10 +75,8 @@ def has_track_changed() -> bool:
     return False
 
 def get_current_album_art() -> Optional[List[List[int]]]:
-    print("!", TRACK_INFO)
     if TRACK_INFO is None:
         return None
-    print(TRACK_INFO.album_art_image)
     return TRACK_INFO.album_art_image
 
 @lru_cache(maxsize=20)
@@ -84,6 +99,28 @@ def get_album_art(art_uri: str) -> List[List[int]]:
                 image_data[y].append(r << 24 | g << 16 | b << 8 | 255)
 
     return image_data
+
+def fix_album_art_url(track_info) -> Optional[str]:
+    if "metadata" not in track_info:
+        return None
+    
+    xml = parseString(track_info["metadata"])
+    tags = xml.getElementsByTagName("upnp:albumArtURI")
+    if len(tags) == 0:
+        return None
+
+    url = xml_get_text(tags[0].childNodes)
+
+    if not url.startswith("http"):
+        url = f"http://{TARGET.ip_address}{url}"
+    return url
+
+def xml_get_text(nodelist):
+    rc = []
+    for node in nodelist:
+        if node.nodeType == node.TEXT_NODE:
+            rc.append(node.data)
+    return ''.join(rc)
 
 if __name__ == "__main__":
     get_current_track_info()
