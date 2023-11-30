@@ -3,6 +3,8 @@
 from functools import lru_cache
 import io
 import math
+import struct
+import sys
 from typing import Any, Optional, List
 from xml.dom.minidom import parseString
 
@@ -25,11 +27,11 @@ class TrackInfo:
             self.album_art = fix_album_art_url(track_info)
         if self.album_art is not None and len(self.album_art) > 0:
             try:
-                self.album_art_image: Optional[List[str]] = \
+                self.album_art_image: Optional[bytes] = \
                     get_album_art(self.album_art)
             except requests.exceptions.ConnectionError as e:
-                print("Error loading Album Art")
-                print(e)
+                sys.stderr.write("Error loading Album Art\n")
+                sys.stderr.write(e)
                 self.album_art_image = None
         else:
             print("no album art url :-(")
@@ -66,7 +68,7 @@ def get_sonos_device() -> Optional[Any]:
     try:
         return DEVICES["Kitchen"]
     except KeyError:
-        print("No device Kitchen")
+        sys.stderr.write("No device Kitchen\n")
         return None
 
 
@@ -81,19 +83,19 @@ def has_track_changed() -> bool:
     if TRACK_INFO is None or TRACK_INFO != new_info:
         TRACK_INFO = new_info
         return True
-    print("no change")
+    sys.stderr.write("no change\n")
     return False
 
 
-def get_current_album_art() -> Optional[List[str]]:
+def get_current_album_art() -> Optional[bytes]:
     if TRACK_INFO is None:
         return None
     return TRACK_INFO.album_art_image
 
 
 @lru_cache(maxsize=20)
-def get_album_art(art_uri: str) -> List[str]:
-    print(f"Getting album art {art_uri}")
+def get_album_art(art_uri: str) -> bytes:
+    sys.stderr.write(f"Getting album art {art_uri}\n")
     resp = requests.get(art_uri, stream=True)
     resp.raise_for_status()
     buffer = io.BytesIO()
@@ -101,9 +103,9 @@ def get_album_art(art_uri: str) -> List[str]:
         buffer.write(chunk)
     buffer.seek(0)
 
-    image_data: List[List[str]] = []
+    image_data: List[int] = []
     with Image.open(buffer) as im:
-        im.thumbnail((64, 64))
+        im.thumbnail((64, 64), Image.Resampling.LANCZOS)
         xsize, ysize = im.size
 
         xbefore, xafter, ybefore, yafter = 0, 0, 0, 0
@@ -115,22 +117,19 @@ def get_album_art(art_uri: str) -> List[str]:
             yafter = math.ceil((64 - ysize) / 2.0)
 
         if ybefore > 0:
-            image_data.extend([[chr(0)] * 64] * ybefore)
+            image_data.extend([0] * 64 * ybefore)
         for y in range(ysize):
-            image_data.append([])
             if xbefore > 0:
-                image_data[-1].extend([chr(0)] * xbefore)
+                image_data.extend([0] * xbefore)
             for x in range(xsize):
                 r, g, b = im.getpixel((x, y))
-                image_data[-1].extend(chr(r) + chr(g) + chr(b))
+                image_data.extend([r, g, b])
             if xafter > 0:
-                image_data[-1].extend([chr(0)] * xafter)
+                image_data.extend([0] * xafter)
         if yafter > 0:
-            image_data.extend([[chr(0)] * 64] * yafter)
+            image_data.extend([0] * 64 * yafter)
 
-    return [
-        "".join(row) for row in image_data
-    ]
+    return struct.pack("B" * (64 * 64 * 3), *image_data)
 
 
 def fix_album_art_url(track_info) -> Optional[str]:
