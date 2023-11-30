@@ -1,7 +1,9 @@
 import http.server
 import json
+from io import BytesIO
 from typing import Any
 from urllib.parse import urlparse, parse_qs
+import sys
 
 from .sonos import has_track_changed, get_current_album_art
 
@@ -26,6 +28,16 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
 
         self.wfile.write(json.dumps(data).encode("utf8"))
 
+    def do_POST(self) -> None:
+        file_length = int(self.headers['Content-Length'])
+        data = BytesIO()
+        data.write(self.rfile.read(file_length))
+
+        self.error(data.getvalue().decode("utf8"))
+
+        self.send_response(204)
+        self.end_headers()
+
     def next_screen(self) -> Any:
         query_components = parse_qs(urlparse(self.path).query)
         current = query_components["current"][0]
@@ -43,3 +55,8 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
         return {
             "album_art": get_current_album_art()
         }
+
+    def error(self, data: str) -> Any:
+        sys.stderr.write(data)
+        sys.stderr.flush()
+        return {}
