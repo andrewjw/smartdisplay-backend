@@ -31,7 +31,7 @@ class TrackInfo:
                     get_album_art(self.album_art)
             except requests.exceptions.ConnectionError as e:
                 sys.stderr.write("Error loading Album Art\n")
-                sys.stderr.write(e)
+                sys.stderr.write(str(e))
                 self.album_art_image = None
         else:
             print("no album art url :-(")
