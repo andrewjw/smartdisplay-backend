@@ -101,7 +101,7 @@ def get_album_art(art_uri: str) -> List[List[int]]:
         buffer.write(chunk)
     buffer.seek(0)
 
-    image_data: List[List[int]] = []
+    image_data: List[List[str]] = []
     with Image.open(buffer) as im:
         im.thumbnail((64, 64))
         xsize, ysize = im.size
@@ -115,20 +115,22 @@ def get_album_art(art_uri: str) -> List[List[int]]:
             yafter = math.ceil((64 - ysize) / 2.0)
 
         if ybefore > 0:
-            image_data.extend([[0] * 64] * ybefore)
+            image_data.extend([[chr(0)] * 64] * ybefore)
         for y in range(ysize):
             image_data.append([])
             if xbefore > 0:
-                image_data[-1].extend([0] * xbefore)
+                image_data[-1].extend([chr(0)] * xbefore)
             for x in range(xsize):
                 r, g, b = im.getpixel((x, y))
-                image_data[-1].append(r << 24 | g << 16 | b << 8 | 255)
+                image_data[-1].extend(chr(r) + chr(g) + chr(b))
             if xafter > 0:
                 image_data[-1].extend([0] * xafter)
         if yafter > 0:
-            image_data.extend([[0] * 64] * yafter)
+            image_data.extend([[chr(0)] * 64] * yafter)
 
-    return image_data
+    return [
+        "".join(row) for row in image_data
+    ]
 
 
 def fix_album_art_url(track_info) -> Optional[str]:
