@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 import io
+import math
 from typing import Any, Optional, List
 from xml.dom.minidom import parseString
 
@@ -103,11 +104,29 @@ def get_album_art(art_uri: str) -> List[List[int]]:
     image_data: List[List[int]] = []
     with Image.open(buffer) as im:
         im.thumbnail((64, 64))
-        for y in range(64):
+        xsize, ysize = im.size
+
+        xbefore, xafter, ybefore, yafter = 0, 0, 0, 0
+        if xsize < 64:
+            xbefore = math.floor((64 - xsize) / 2.0)
+            xafter = math.ceil((64 - xsize) / 2.0)
+        if ysize < 64:
+            ybefore = math.floor((64 - ysize) / 2.0)
+            yafter = math.ceil((64 - ysize) / 2.0)
+
+        if ybefore > 0:
+            image_data.extend([[0] * 64] * ybefore)
+        for y in range(ysize):
             image_data.append([])
-            for x in range(64):
+            if xbefore > 0:
+                image_data[-1].extend([0] * xbefore)
+            for x in range(xsize):
                 r, g, b = im.getpixel((x, y))
-                image_data[y].append(r << 24 | g << 16 | b << 8 | 255)
+                image_data[-1].append(r << 24 | g << 16 | b << 8 | 255)
+            if xafter > 0:
+                image_data[-1].extend([0] * xafter)
+        if yafter > 0:
+            image_data.extend([[0] * 64] * yafter)
 
     return image_data
 
