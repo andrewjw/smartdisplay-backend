@@ -5,6 +5,7 @@ from urllib.parse import urlparse, parse_qs
 
 from .sonos import has_track_changed, get_current_album_art
 
+
 class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         if self.path.startswith("/next_screen"):
@@ -27,7 +28,7 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
 
     def next_screen(self) -> Any:
         query_components = parse_qs(urlparse(self.path).query)
-        current = query_components["current"]
+        current = query_components["current"][0]
 
         if has_track_changed():
             return "sonos"
@@ -36,7 +37,7 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
             return "balls"
         if current == "balls":
             return "clock"
-        return "clock" 
+        return "clock"
 
     def sonos(self) -> Any:
         return {

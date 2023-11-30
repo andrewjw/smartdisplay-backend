@@ -7,11 +7,12 @@ from xml.dom.minidom import parseString
 
 from PIL import Image
 import requests
-import soco
+import soco  # type: ignore
 
 DEVICES = {device.player_name: device for device in soco.discover(timeout=60)}
 
 TRACK_INFO = None
+
 
 class TrackInfo:
     def __init__(self, track_info: Any) -> None:
@@ -23,7 +24,8 @@ class TrackInfo:
             self.album_art = fix_album_art_url(track_info)
         if self.album_art is not None and len(self.album_art) > 0:
             try:
-                self.album_art_image: Optional[List[List[int]]] = get_album_art(self.album_art)
+                self.album_art_image: Optional[List[List[int]]] = \
+                    get_album_art(self.album_art)
             except requests.exceptions.ConnectionError as e:
                 print("Error loading Album Art")
                 print(e)
@@ -32,9 +34,11 @@ class TrackInfo:
             print("no album art url :-(")
             self.album_art_image = None
 
-    def __eq__(self, other: "TrackInfo") -> bool:
+    def __eq__(self, other: object) -> bool:
         if other is None:
             return True
+        if not isinstance(other, TrackInfo):
+            return False
         return self.artist == other.artist and self.album == other.album and \
             self.title == other.title and self.album_art == self.album_art
 
@@ -42,16 +46,20 @@ class TrackInfo:
         return not (self == other)
 
     def __str__(self):
-        return f"<TrackInfo {self.artist} {self.title} {self.album_art_image is not None}>"
+        return f"<TrackInfo {self.artist} {self.title}" + \
+               f" {self.album_art_image is not None}>"
+
 
 def get_current_track_info() -> Optional[TrackInfo]:
     target = get_sonos_device()
     if target is None:
         return None
-    if target.group.coordinator.get_current_transport_info()['current_transport_state'] != "PLAYING":
+    transport_info = target.group.coordinator.get_current_transport_info()
+    if transport_info['current_transport_state'] != "PLAYING":
         return None
 
     return TrackInfo(target.group.coordinator.get_current_track_info())
+
 
 def get_sonos_device() -> Optional[Any]:
     try:
@@ -59,6 +67,7 @@ def get_sonos_device() -> Optional[Any]:
     except KeyError:
         print("No device Kitchen")
         return None
+
 
 def has_track_changed() -> bool:
     global TRACK_INFO
@@ -74,18 +83,20 @@ def has_track_changed() -> bool:
     print("no change")
     return False
 
+
 def get_current_album_art() -> Optional[List[List[int]]]:
     if TRACK_INFO is None:
         return None
     return TRACK_INFO.album_art_image
 
+
 @lru_cache(maxsize=20)
 def get_album_art(art_uri: str) -> List[List[int]]:
     print(f"Getting album art {art_uri}")
-    r = requests.get(art_uri, stream=True)
-    r.raise_for_status()
+    resp = requests.get(art_uri, stream=True)
+    resp.raise_for_status()
     buffer = io.BytesIO()
-    for chunk in r.iter_content(chunk_size=128):
+    for chunk in resp.iter_content(chunk_size=128):
         buffer.write(chunk)
     buffer.seek(0)
 
@@ -100,10 +111,11 @@ def get_album_art(art_uri: str) -> List[List[int]]:
 
     return image_data
 
+
 def fix_album_art_url(track_info) -> Optional[str]:
     if "metadata" not in track_info:
         return None
-    
+
     xml = parseString(track_info["metadata"])
     tags = xml.getElementsByTagName("upnp:albumArtURI")
     if len(tags) == 0:
@@ -112,8 +124,11 @@ def fix_album_art_url(track_info) -> Optional[str]:
     url = xml_get_text(tags[0].childNodes)
 
     if not url.startswith("http"):
-        url = f"http://{TARGET.ip_address}{url}"
+        device = get_sonos_device()
+        if device is not None:
+            url = f"http://{device.ip_address}{url}"
     return url
+
 
 def xml_get_text(nodelist):
     rc = []
@@ -121,6 +136,7 @@ def xml_get_text(nodelist):
         if node.nodeType == node.TEXT_NODE:
             rc.append(node.data)
     return ''.join(rc)
+
 
 if __name__ == "__main__":
     get_current_track_info()
