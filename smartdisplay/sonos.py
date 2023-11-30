@@ -25,7 +25,7 @@ class TrackInfo:
             self.album_art = fix_album_art_url(track_info)
         if self.album_art is not None and len(self.album_art) > 0:
             try:
-                self.album_art_image: Optional[List[List[int]]] = \
+                self.album_art_image: Optional[List[str]] = \
                     get_album_art(self.album_art)
             except requests.exceptions.ConnectionError as e:
                 print("Error loading Album Art")
@@ -85,14 +85,14 @@ def has_track_changed() -> bool:
     return False
 
 
-def get_current_album_art() -> Optional[List[List[int]]]:
+def get_current_album_art() -> Optional[List[str]]:
     if TRACK_INFO is None:
         return None
     return TRACK_INFO.album_art_image
 
 
 @lru_cache(maxsize=20)
-def get_album_art(art_uri: str) -> List[List[int]]:
+def get_album_art(art_uri: str) -> List[str]:
     print(f"Getting album art {art_uri}")
     resp = requests.get(art_uri, stream=True)
     resp.raise_for_status()
@@ -124,7 +124,7 @@ def get_album_art(art_uri: str) -> List[List[int]]:
                 r, g, b = im.getpixel((x, y))
                 image_data[-1].extend(chr(r) + chr(g) + chr(b))
             if xafter > 0:
-                image_data[-1].extend([0] * xafter)
+                image_data[-1].extend([chr(0)] * xafter)
         if yafter > 0:
             image_data.extend([[chr(0)] * 64] * yafter)
 
