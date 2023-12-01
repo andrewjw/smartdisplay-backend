@@ -1,11 +1,15 @@
 import http.server
 import json
 from io import BytesIO
-from typing import Any
+import socket
+import socketserver
+from typing import Any, Union
 from urllib.parse import urlparse, parse_qs
 import sys
 
-from .sonos import has_track_changed, get_current_album_art
+from .sonos import SonosHandler
+
+SONOS = SonosHandler()
 
 
 class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
@@ -16,7 +20,7 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
             self.sonos_art()
             return
         elif self.path.startswith("/sonos"):
-            data = self.sonos()
+            data = self.sonos_data()
         else:
             self.send_response(404)
             self.send_header("Content-type", "text/plain")
@@ -48,7 +52,7 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
         query_components = parse_qs(urlparse(self.path).query)
         current = query_components["current"][0]
 
-        if has_track_changed():
+        if SONOS.has_track_changed():
             return "sonos"
 
         if current == "clock":
@@ -57,13 +61,13 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
             return "clock"
         return "clock"
 
-    def sonos(self) -> Any:
+    def sonos_data(self) -> Any:
         return {
-            "album_art": get_current_album_art() is not None
+            "album_art": SONOS.get_current_album_art() is not None
         }
 
     def sonos_art(self) -> Any:
-        art = get_current_album_art()
+        art = SONOS.get_current_album_art()
         if art is None:
             self.send_response(404)
             self.send_header("Content-type", "text/plain")
