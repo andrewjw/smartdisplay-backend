@@ -79,7 +79,7 @@ class SonosHandler:
 
     def has_track_changed(self) -> bool:
         new_info = self.get_current_track_info()
-        print(self.track_info, new_info)
+        sys.stderr.write("{self.track_info} {new_info}\n")
         if new_info is None:
             self.track_info = None
             return False
@@ -113,13 +113,16 @@ class SonosHandler:
 
 
 @lru_cache(maxsize=20)
-def get_album_art(art_uri: str) -> bytes:
-    print(f"Getting album art {art_uri}\n")
+def get_album_art(art_uri: str) -> Optional[bytes]:
+    sys.stderr.write(f"Getting album art {art_uri}\n")
     resp = requests.get(art_uri, stream=True)
     resp.raise_for_status()
     buffer = io.BytesIO()
-    for chunk in resp.iter_content(chunk_size=128):
-        buffer.write(chunk)
+    try:
+        for chunk in resp.iter_content(chunk_size=128):
+            buffer.write(chunk)
+    except requests.exceptions.ChunkedEncodingError:
+        return None
     buffer.seek(0)
 
     image_data: List[int] = []
@@ -148,7 +151,6 @@ def get_album_art(art_uri: str) -> bytes:
         if yafter > 0:
             image_data.extend([0, 0, 0] * 64 * yafter)
 
-    print(len(image_data))
     return struct.pack("B" * (64 * 64 * 3), *image_data)
 
 
