@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from datetime import datetime
 from functools import lru_cache
 import io
 import math
@@ -15,6 +16,7 @@ import soco  # type: ignore
 
 class TrackInfo:
     def __init__(self, track_info: Any, sonos: "SonosHandler") -> None:
+        self.created = datetime.utcnow()
         self.artist = track_info["artist"]
         self.album = track_info["album"]
         self.title = track_info["title"]
@@ -79,11 +81,15 @@ class SonosHandler:
 
     def has_track_changed(self) -> bool:
         new_info = self.get_current_track_info()
-        sys.stderr.write("{self.track_info} {new_info}\n")
+        sys.stderr.write(f"{self.track_info} {new_info}\n")
         if new_info is None:
             self.track_info = None
             return False
         if self.track_info is None or self.track_info != new_info:
+            self.track_info = new_info
+            return True
+        if abs((self.track_info.created - new_info.created).seconds) > 60 * 5:
+            sys.stderr.write("no track change for 5 minutes\n")
             self.track_info = new_info
             return True
         sys.stderr.write("no change\n")
