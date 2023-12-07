@@ -91,9 +91,10 @@ class SonosHandler:
         if self.track_info is None or self.track_info != new_info:
             self.track_info = new_info
             return True
-        if abs((new_info.created - self.track_info.created).total_seconds()) > 60 * 5:
-            sys.stderr.write("no track change for 5 minutes" +\
-                             f" ({new_info.created - self.track_info.created})\n")
+        if abs((new_info.created - self.track_info.created).total_seconds()) \
+           > 60 * 5:
+            duration = new_info.created - self.track_info.created
+            sys.stderr.write("no track change for 5 minutes ({duration})\n")
             self.track_info = new_info
             return True
         sys.stderr.write("no change\n")
