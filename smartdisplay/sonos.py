@@ -65,8 +65,11 @@ class SonosHandler:
         if transport_info['current_transport_state'] != "PLAYING":
             return None
 
-        return TrackInfo(target.group.coordinator.get_current_track_info(),
-                         self)
+        try:
+            return TrackInfo(target.group.coordinator.get_current_track_info(),
+                             self)
+        except requests.exceptions.ReadTimeout:
+            return None
 
     def get_sonos_device(self) -> Optional[Any]:
         if "Kitchen" not in self.devices:
