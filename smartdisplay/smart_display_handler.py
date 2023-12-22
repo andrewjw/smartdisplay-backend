@@ -60,7 +60,7 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
         current = query_components["current"][0]
 
         SONOS.has_track_changed()
-        if True: #SONOS.has_track_changed():
+        if SONOS.has_track_changed():
             return "sonos"
 
         if current == "clock":
