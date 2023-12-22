@@ -57,7 +57,7 @@ class SonosHandler:
         self.devices: Dict[str, Any] = {}
         self.track_info: Optional[TrackInfo] = None
 
-    def get_current_track_info(self) -> Optional[TrackInfo]:
+    def _get_current_track_info(self) -> Optional[TrackInfo]:
         target = self.get_sonos_device()
         if target is None:
             return None
@@ -83,7 +83,7 @@ class SonosHandler:
             return None
 
     def has_track_changed(self) -> bool:
-        new_info = self.get_current_track_info()
+        new_info = self._get_current_track_info()
         sys.stderr.write(f"{self.track_info} {new_info}\n")
         if new_info is None:
             self.track_info = None
@@ -174,4 +174,4 @@ def xml_get_text(nodelist):
 
 
 if __name__ == "__main__":
-    SonosHandler().get_current_track_info()
+    SonosHandler()._get_current_track_info()

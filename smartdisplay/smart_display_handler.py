@@ -22,11 +22,11 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
         elif self.path.startswith("/sonos"):
             data = self.sonos_data()
         else:
-            self.send_response(404)
-            self.send_header("Content-type", "text/plain")
-            self.end_headers()
+            self.return404()
+            return
 
-            self.wfile.write(f"Page {self.path} not found".encode("utf8"))
+        if data is None:
+            self.return404()
             return
 
         json_data = json.dumps(data).encode("utf8")
@@ -37,6 +37,13 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
 
         self.wfile.write(json_data)
+
+    def return404(self) -> Any:
+        self.send_response(404)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+
+        self.wfile.write(f"Page {self.path} not found".encode("utf8"))
 
     def do_POST(self) -> None:
         file_length = int(self.headers['Content-Length'])
@@ -52,7 +59,8 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
         query_components = parse_qs(urlparse(self.path).query)
         current = query_components["current"][0]
 
-        if SONOS.has_track_changed():
+        SONOS.has_track_changed()
+        if True: #SONOS.has_track_changed():
             return "sonos"
 
         if current == "clock":
@@ -62,7 +70,13 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
         return "clock"
 
     def sonos_data(self) -> Any:
+        track = SONOS.track_info
+        if track is None:
+            return None
         return {
+            "artist": track.artist,
+            "album": track.album,
+            "track": track.title,
             "album_art": SONOS.get_current_album_art() is not None
         }
 
