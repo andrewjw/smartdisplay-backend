@@ -156,10 +156,10 @@ def get_album_art(art_uri: str) -> Optional[bytes]:
                 image_data.extend([0, 0, 0] * xbefore)
             for x in range(xsize):
                 pixel = im.getpixel((x, y))
-                if len(pixel) == 3:
-                    r, g, b = pixel
-                elif len(pixel) == 1:
+                if isinstance(pixel, int):
                     r, g, b = pixel, pixel, pixel
+                elif len(pixel) == 3:
+                    r, g, b = pixel
                 else:
                     raise ValueError(f"Got {len(pixel)} colour values.")
 
