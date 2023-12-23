@@ -138,7 +138,10 @@ def get_album_art(art_uri: str) -> Optional[bytes]:
 
     image_data: List[int] = []
     with Image.open(buffer) as im:
-        im.thumbnail((64, 64), Image.Resampling.LANCZOS)
+        try:
+            im.thumbnail((64, 64), Image.Resampling.LANCZOS)
+        except OSError:
+            return None
         xsize, ysize = im.size
 
         xbefore, xafter, ybefore, yafter = 0, 0, 0, 0
