@@ -2,6 +2,6 @@ soco==0.29.1
 pillow==10.1.0
 requests==2.31.0
 types-requests==2.31.0.10
-types-Pillow==10.1.0.2
+types-Pillow==10.1.0.20240106
 pycodestyle==2.11.1
 mypy==1.7.1
