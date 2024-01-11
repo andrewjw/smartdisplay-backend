@@ -1,13 +1,15 @@
+from datetime import date, datetime
 import http.server
 import json
 from io import BytesIO
-import socket
-import socketserver
-from typing import Any, Union
+from typing import Any, List
 from urllib.parse import urlparse, parse_qs
 import sys
+from zoneinfo import ZoneInfo
 
 from .sonos import SonosHandler
+from .trains import get_trains_message, get_trains_from_london, \
+                    get_trains_to_london
 
 SONOS = SonosHandler()
 
@@ -21,6 +23,10 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
             return
         elif self.path.startswith("/sonos"):
             data = self.sonos_data()
+        elif self.path.startswith("/trains_to_london"):
+            data = self.trains_to_london()
+        elif self.path.startswith("/trains_from_london"):
+            data = self.trains_from_london()
         else:
             self.return404()
             return
@@ -62,11 +68,26 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
         if SONOS.has_track_changed():
             return "sonos"
 
-        if current == "clock":
-            return "balls"
-        if current == "balls":
-            return "clock"
-        return "clock"
+        screens = self.get_screens()
+        idx = [idx for (screen, idx) in zip(screens, range(len(screens)))
+               if screen == current]
+        if len(idx) == 0:
+            return screens[0]
+        return screens[(idx[0] + 1) % len(screens)]
+
+    def get_screens(self) -> List[str]:
+        r = ["clock"]
+        hour = datetime.now(tz=ZoneInfo("Europe/London")).hour
+        if date.today().weekday in (0, 1):
+            if hour in (6, 7, 8):
+                r.append("trains_to_london")
+            elif hour in (16, 17, 18, 19, 20, 21, 22):
+                r.append("trains_home")
+        elif date.today().weekday in (5, 6) and hour >= 8 and hour < 18:
+            r.append("trains_to_london")
+        if len(r) < 2:
+            r.append("balls")
+        return r
 
     def sonos_data(self) -> Any:
         track = SONOS.track_info
@@ -94,6 +115,18 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
 
         self.wfile.write(art)
+
+    def trains_to_london(self) -> Any:
+        return {
+            "msg": get_trains_message(),
+            "trains": get_trains_to_london()
+        }
+
+    def trains_from_london(self) -> Any:
+        return {
+            "msg": get_trains_message(),
+            "trains": get_trains_from_london()
+        }
 
     def error(self, data: str) -> Any:
         sys.stderr.write(data)
