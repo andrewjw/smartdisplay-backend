@@ -7,6 +7,8 @@ from urllib.parse import urlparse, parse_qs
 import sys
 from zoneinfo import ZoneInfo
 
+from sentry_sdk import capture_message  # type:ignore
+
 from .sonos import SonosHandler
 from .trains import get_trains_message, get_trains_from_london, \
                     get_trains_to_london
@@ -56,7 +58,13 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
         data = BytesIO()
         data.write(self.rfile.read(file_length))
 
-        self.error(data.getvalue().decode("utf8"))
+        if self.path.startswith("/log"):
+            self.log(data.getvalue().decode("utf8"))
+        elif self.path.startswith("/error"):
+            self.error(data.getvalue().decode("utf8"))
+        else:
+            self.return404()
+            return
 
         self.send_response(204)
         self.end_headers()
@@ -128,7 +136,13 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
             "trains": get_trains_from_london()
         }
 
+    def log(self, data: str) -> Any:
+        sys.stdout.write(data)
+        sys.stdout.flush()
+        return {}
+
     def error(self, data: str) -> Any:
+        capture_message(data)
         sys.stderr.write(data)
         sys.stderr.flush()
         return {}
