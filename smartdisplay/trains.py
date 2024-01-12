@@ -21,7 +21,7 @@ SOUTH_STATIONS = set([
     "Potters Bar", "Hadley Wood", "New Barnet",
     "Oakleigh Park", "New Southgate", "Alexandra Palace",
     "Harringay", "Hornsey", "Finsbury Park", "London Kings Cross",
-    "Old Street", "Moorgate"
+    "Old Street", "Moorgate", "Sevenoaks"
 ])
 
 HTML_RE = re.compile(r"<[^>]+?>")
