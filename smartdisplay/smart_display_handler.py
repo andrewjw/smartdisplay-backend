@@ -93,7 +93,7 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
                 r.append("trains_home")
         elif date.today().weekday() in (5, 6) and hour >= 8 and hour < 18:
             r.append("trains_to_london")
-        if len(r) < 2:
+        if len(r) < 3:
             r.append("balls")
         return r
 
