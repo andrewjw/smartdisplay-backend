@@ -86,12 +86,12 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
     def get_screens(self) -> List[str]:
         r = ["clock"]
         hour = datetime.now(tz=ZoneInfo("Europe/London")).hour
-        if date.today().weekday in (0, 1):
+        if date.today().weekday() in (0, 1):
             if hour in (6, 7, 8):
                 r.append("trains_to_london")
             elif hour in (16, 17, 18, 19, 20, 21, 22):
                 r.append("trains_home")
-        elif date.today().weekday in (5, 6) and hour >= 8 and hour < 18:
+        elif date.today().weekday() in (5, 6) and hour >= 8 and hour < 18:
             r.append("trains_to_london")
         if len(r) < 2:
             r.append("balls")
