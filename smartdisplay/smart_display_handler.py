@@ -12,6 +12,7 @@ from sentry_sdk import capture_message  # type:ignore
 from .sonos import SonosHandler
 from .trains import get_trains_message, get_trains_from_london, \
                     get_trains_to_london
+from .house_temperature import get_house_temperature
 
 SONOS = SonosHandler()
 
@@ -29,6 +30,8 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
             data = self.trains_to_london()
         elif self.path.startswith("/trains_from_london"):
             data = self.trains_from_london()
+        elif self.path.startswith("/house_temperature"):
+            data = get_house_temperature()
         else:
             self.return404()
             return
