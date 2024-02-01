@@ -87,7 +87,7 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
         return screens[(idx[0] + 1) % len(screens)]
 
     def get_screens(self) -> List[str]:
-        r = ["clock"]
+        r = ["clock", "house_temperature"]
         hour = datetime.now(tz=ZoneInfo("Europe/London")).hour
         if date.today().weekday() in (0, 1):
             if hour in (6, 7, 8):
@@ -96,8 +96,7 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
                 r.append("trains_home")
         elif date.today().weekday() in (5, 6) and hour >= 8 and hour < 18:
             r.append("trains_to_london")
-        if len(r) < 3:
-            r.append("balls")
+        r.append("balls")
         return r
 
     def sonos_data(self) -> Any:

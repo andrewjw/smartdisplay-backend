@@ -6,6 +6,9 @@ from prometheus_api_client import PrometheusConnect  # type:ignore
 def get_house_temperature() -> Dict[str, float]:
     prom = PrometheusConnect(url="http://192.168.1.207:9090")
 
+    outside = prom.get_current_metric_value(metric_name='prom433_temperature',
+                                            label_config={"model": "Fineoffset-WS90"})
+
     return {
         "lounge": _get_room_temperature(prom, "lounge"),
         "kitchen": _get_room_temperature(prom, "kitchen"),
@@ -13,13 +16,14 @@ def get_house_temperature() -> Dict[str, float]:
         "alexbedroom": _get_room_temperature(prom, "alexbedroom"),
         "harrietbedroom": _get_room_temperature(prom, "harrietbedroom"),
         "office": _get_room_temperature(prom, "office"),
+        "outside": float(outside[0]["value"][1]),
     }
 
 
 def _get_room_temperature(prom: PrometheusConnect, room: str) -> float:
     data = prom.get_current_metric_value(metric_name='prom433_temperature',
                                          label_config={"room": room})
-    return data[0]["value"][1]
+    return float(data[0]["value"][1])
 
 
 if __name__ == "__main__":
