@@ -1,5 +1,5 @@
 soco==0.29.1
-pillow==10.1.0
+pillow==10.2.0
 requests==2.31.0
 types-requests==2.31.0.20240125
 types-Pillow==10.1.0.2
