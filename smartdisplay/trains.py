@@ -102,6 +102,8 @@ def get_trains_message() -> Optional[str]:
 def _is_late(scheduled: str, estimated: str) -> bool:
     if estimated == "On time" or scheduled is None or estimated is None:
         return False
+    if estimated in ("Cancelled", "Delayed"):
+        return True
     shour, sminute = int(scheduled.split(":")[0]), int(scheduled.split(":")[1])
     ehour, eminute = int(estimated.split(":")[0]), int(estimated.split(":")[1])
 
