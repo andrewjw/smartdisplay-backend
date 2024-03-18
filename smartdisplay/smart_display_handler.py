@@ -9,6 +9,8 @@ from zoneinfo import ZoneInfo
 
 from sentry_sdk import capture_message  # type:ignore
 
+from .current_weather import get_current_weather, \
+                             get_current_weather_last_update
 from .sonos import SonosHandler
 from .trains import get_trains_message, get_trains_from_london, \
                     get_trains_to_london
@@ -32,6 +34,8 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
             data = self.trains_from_london()
         elif self.path.startswith("/house_temperature"):
             data = get_house_temperature()
+        elif self.path.startswith("/current_weather"):
+            data = get_current_weather()
         else:
             self.return404()
             return
@@ -88,6 +92,9 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
 
     def get_screens(self) -> List[str]:
         r = ["clock", "house_temperature"]
+        if get_current_weather_last_update() < 10 * 60:
+            r.append("current_weather")
+
         hour = datetime.now(tz=ZoneInfo("Europe/London")).hour
         if date.today().weekday() in (0, 1):
             if hour in (6, 7, 8):
