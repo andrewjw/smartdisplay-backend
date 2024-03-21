@@ -20,6 +20,7 @@ def get_current_weather() -> Dict[str, float | str]:
     return {
         "temperature": _get_weather_metric(prom, "temperature"),
         "humidity": _get_weather_metric(prom, "humidity"),
+        "lux": _get_weather_metric(prom, "light_lux"),
         "uv": _get_weather_metric(prom, "uvi"),
         "gust": _get_weather_metric(prom, "wind_max_m"),
         "wind": _get_weather_metric(prom, "wind_avg_m"),
