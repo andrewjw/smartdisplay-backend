@@ -44,7 +44,7 @@ def get_pressure(prom: PrometheusConnect) -> Tuple[float, str, str]:
     if pressure < 965:
         text = "Stormy"
     elif pressure < 985:
-        text = "Rainy"
+        text = "Rain"
     elif pressure < 1015:
         text = "Changeable"
     elif pressure < 1035:
