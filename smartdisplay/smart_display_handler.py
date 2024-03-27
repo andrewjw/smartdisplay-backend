@@ -100,7 +100,7 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
     def get_screens(self) -> List[str]:
         now = datetime.now(tz=ZoneInfo("Europe/London"))
 
-        if now.hour < 6 or (now.hour == 6 and now.minute < 30) or \
+        if now.hour < 6 or (now.hour == 6 and now.minute < 20) or \
            (now.hour == 22 and now.minute >= 30) or now.hour > 22:
             return ["blackout"]
 
