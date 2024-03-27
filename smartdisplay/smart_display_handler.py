@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, tzinfo
 import http.server
 import json
 from io import BytesIO
@@ -98,11 +98,17 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
         return screens[(idx[0] + 1) % len(screens)]
 
     def get_screens(self) -> List[str]:
+        now = datetime.now(tz=ZoneInfo("Europe/London"))
+
+        if now.hour < 6 or (now.hour == 6 and now.minute < 30) or \
+           (now.hour == 22 or now.minute >= 30) or now.hour >= 22:
+            return ["blackout"]
+
         r = ["clock", "house_temperature"]
         if get_current_weather_last_update() < 10 * 60:
             r.append("current_weather")
 
-        hour = datetime.now(tz=ZoneInfo("Europe/London")).hour
+        hour = now.hour
         if date.today().weekday() in (0, 1):
             if hour in (6, 7, 8):
                 r.append("trains_to_london")
