@@ -101,7 +101,7 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
         now = datetime.now(tz=ZoneInfo("Europe/London"))
 
         if now.hour < 6 or (now.hour == 6 and now.minute < 30) or \
-           (now.hour == 22 or now.minute >= 30) or now.hour >= 22:
+           (now.hour == 21 or now.minute >= 20) or now.hour > 22:
             return ["blackout"]
 
         r = ["clock", "house_temperature"]
