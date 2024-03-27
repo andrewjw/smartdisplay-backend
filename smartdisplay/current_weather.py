@@ -28,6 +28,7 @@ def get_current_weather() -> Dict[str, float | str]:
         "winddir": get_wind_dir(prom),
         "rain_24h": _get_weather_query(prom, "increase(prom433_rain[24h])"),
         "rain_1h": _get_weather_query(prom, "increase(prom433_rain[1h])"),
+        "rain_20m": _get_weather_query(prom, "increase(prom433_rain[20m])"),
         "pressure": pressure,
         "pressure_change": pressure_change,
         "pressure_text": pressure_text
