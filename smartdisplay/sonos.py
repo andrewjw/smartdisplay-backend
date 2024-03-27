@@ -56,6 +56,8 @@ class SonosHandler:
     def __init__(self) -> None:
         self.devices: Dict[str, Any] = {}
         self.track_info: Optional[TrackInfo] = None
+        self.last_screen = "sonos"
+        self.last_display_time: Optional[datetime] = None
 
     def _get_current_track_info(self) -> Optional[TrackInfo]:
         target = self.get_sonos_device()
@@ -84,20 +86,19 @@ class SonosHandler:
 
     def has_track_changed(self) -> bool:
         new_info = self._get_current_track_info()
-        sys.stderr.write(f"{self.track_info} {new_info}\n")
         if new_info is None:
             self.track_info = None
+            self.last_display_time = None
             return False
         if self.track_info is None or self.track_info != new_info:
             self.track_info = new_info
+            self.last_display_time = datetime.utcnow()
             return True
         if abs((new_info.created - self.track_info.created).total_seconds()) \
            > 60 * 5:
-            duration = new_info.created - self.track_info.created
-            sys.stderr.write("no track change for 5 minutes ({duration})\n")
             self.track_info = new_info
+            self.last_display_time = datetime.utcnow()
             return True
-        sys.stderr.write("no change\n")
         return False
 
     def get_current_album_art(self) -> Optional[bytes]:
@@ -121,6 +122,21 @@ class SonosHandler:
             if device is not None:
                 url = f"http://{device.ip_address}{url}"
         return url
+
+    def set_last_screen(self, screen: str) -> None:
+        self.last_screen = screen
+
+    def get_last_screen(self) -> str:
+        return self.last_screen
+
+    def show_quick(self) -> bool:
+        if self.last_display_time is None:
+            return False
+        if (datetime.utcnow() - self.last_display_time).total_seconds() \
+           > 2 * 60:
+            self.last_display_time = datetime.utcnow()
+            return True
+        return False
 
 
 @lru_cache(maxsize=20)

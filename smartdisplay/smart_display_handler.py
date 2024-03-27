@@ -80,8 +80,15 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
         query_components = parse_qs(urlparse(self.path).query)
         current = query_components["current"][0]
 
+        if current in ("sonos", "sonos_quick"):
+            current = SONOS.get_last_screen()
+
         if SONOS.has_track_changed():
+            SONOS.set_last_screen(current)
             return "sonos"
+        if SONOS.show_quick():
+            SONOS.set_last_screen(current)
+            return "sonos_quick"
 
         screens = self.get_screens()
         idx = [idx for (screen, idx) in zip(screens, range(len(screens)))
