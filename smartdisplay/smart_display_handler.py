@@ -15,6 +15,7 @@ from .sonos import SonosHandler
 from .trains import get_trains_message, get_trains_from_london, \
                     get_trains_to_london
 from .house_temperature import get_house_temperature
+from .solar import get_current_solar
 
 SONOS = SonosHandler()
 
@@ -36,6 +37,8 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
             data = get_house_temperature()
         elif self.path.startswith("/current_weather"):
             data = get_current_weather()
+        elif self.path.startswith("/solar"):
+            data = get_current_solar()
         else:
             self.return404()
             return
