@@ -10,13 +10,22 @@ increase(glowprom_import_cumulative_Wh{type="electric"}[24h])
 
 CAR_QUERY = "increase(teslamate_home_kwh_total[24h]) * 1000"
 
+HOUSE_COST = """
+increase(octopus_cost{type="electric"}[24h])
+- on () delta(teslamate_home_cost_total[24h])
+"""
+
+CAR_COST = "delta(teslamate_home_cost_total[24h])"
+
 
 def get_current_solar() -> Dict[str, float | str]:
     prom = PrometheusConnect(url="http://192.168.1.207:9090")
 
     return {
-        "house": _get_query(prom, IMPORT_QUERY),
-        "car": _get_query(prom, CAR_QUERY),
+        "house_wh": _get_query(prom, IMPORT_QUERY),
+        "car_wh": _get_query(prom, CAR_QUERY),
+        "house_cost": _get_query(prom, HOUSE_COST),
+        "car_cost": _get_query(prom, CAR_COST),
         "pv_power": _get_metric(prom, "foxess_pvPower"),
         "battery": _get_metric(prom, "foxess_SoC"),
         "current_power": _get_metric(prom, "glowprom_power_W"),
