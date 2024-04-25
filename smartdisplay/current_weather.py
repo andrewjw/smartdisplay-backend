@@ -3,6 +3,10 @@ from typing import Dict, Tuple
 
 from prometheus_api_client import PrometheusConnect  # type:ignore
 
+UVI_QUERY = "avg_over_time(prom433_uvi{model=\"Fineoffset-WS90\"}[30m])"
+
+RAIN_QUERY = "increase(prom433_rain{model=\"Fineoffset-WS90\"}[%s])"
+
 
 def get_current_weather_last_update() -> float:
     prom = PrometheusConnect(url="http://192.168.1.207:9090")
@@ -21,14 +25,13 @@ def get_current_weather() -> Dict[str, float | str]:
         "temperature": _get_weather_metric(prom, "temperature"),
         "humidity": _get_weather_metric(prom, "humidity"),
         "lux": _get_weather_metric(prom, "light_lux"),
-        "uv": round(_get_weather_query(prom,
-                                       "avg_over_time(prom433_uvi[30m])")),
+        "uv": round(_get_weather_query(prom, UVI_QUERY)),
         "gust": _get_weather_metric(prom, "wind_max_m"),
         "wind": _get_weather_metric(prom, "wind_avg_m"),
         "winddir": get_wind_dir(prom),
-        "rain_24h": _get_weather_query(prom, "increase(prom433_rain[24h])"),
-        "rain_1h": _get_weather_query(prom, "increase(prom433_rain[1h])"),
-        "rain_20m": _get_weather_query(prom, "increase(prom433_rain[20m])"),
+        "rain_24h": _get_weather_query(prom, RAIN_QUERY % ("24h", )),
+        "rain_1h": _get_weather_query(prom, RAIN_QUERY % ("1h", )),
+        "rain_20m": _get_weather_query(prom, RAIN_QUERY % ("20m", )),
         "pressure": pressure,
         "pressure_change": pressure_change,
         "pressure_text": pressure_text
