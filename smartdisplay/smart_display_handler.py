@@ -79,7 +79,7 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
         self.send_response(204)
         self.end_headers()
 
-    def next_screen(self) -> Any:
+    def next_screen(self) -> str:
         query_components = parse_qs(urlparse(self.path).query)
         current = query_components["current"][0]
 
@@ -107,7 +107,7 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
            (now.hour == 22 and now.minute >= 30) or now.hour > 22:
             return ["blackout"]
 
-        r = ["clock", "house_temperature"]
+        r = ["clock", "house_temperature", "solar"]
         if get_current_weather_last_update() < 10 * 60:
             r.append("current_weather")
 

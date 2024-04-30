@@ -28,10 +28,11 @@ def get_current_solar() -> Dict[str, float | str]:
         "car_cost": _get_query(prom, CAR_COST),
         "pv_power": _get_metric(prom, "foxess_pvPower"),
         "battery": _get_metric(prom, "foxess_SoC"),
+        "house_load": _get_metric(prom, "foxess_loadsPower"),
         "current_power": _get_metric(prom, "glowprom_power_W"),
         "battery_change":
             _get_query(prom,
-                       "foxess_batChargePower - foxess_batDischargePower")
+                       "foxess_batChargePower - foxess_batDischargePower") * 1000
     }
 
 
