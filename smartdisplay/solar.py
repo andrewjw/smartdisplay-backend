@@ -18,6 +18,16 @@ increase(octopus_cost{type="electric"}[24h])
 CAR_COST = "delta(teslamate_home_cost_total[24h])"
 
 
+def is_solar_valid() -> bool:
+    prom = PrometheusConnect(url="http://192.168.1.207:9090")
+
+    try:
+        _get_metric(prom, "foxess_pvPower")
+    except IndexError:
+        return False
+    return True
+
+
 def get_current_solar() -> Dict[str, float | str]:
     prom = PrometheusConnect(url="http://192.168.1.207:9090")
 
@@ -32,7 +42,8 @@ def get_current_solar() -> Dict[str, float | str]:
         "current_power": _get_metric(prom, "glowprom_power_W"),
         "battery_change":
             _get_query(prom,
-                       "foxess_batChargePower - foxess_batDischargePower") * 1000
+                       "foxess_batChargePower - foxess_batDischargePower")
+            * 1000
     }
 
 

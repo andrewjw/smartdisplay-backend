@@ -15,13 +15,14 @@ from .sonos import SonosHandler
 from .trains import get_trains_message, get_trains_from_london, \
                     get_trains_to_london
 from .house_temperature import get_house_temperature
-from .solar import get_current_solar
+from .solar import get_current_solar, is_solar_valid
 
 SONOS = SonosHandler()
 
 
 class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self) -> None:
+        data: Any
         if self.path.startswith("/next_screen"):
             data = self.next_screen()
         elif self.path.startswith("/sonos/art"):
@@ -107,7 +108,9 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
            (now.hour == 22 and now.minute >= 30) or now.hour > 22:
             return ["blackout"]
 
-        r = ["clock", "house_temperature", "solar"]
+        r = ["clock", "house_temperature"]
+        if is_solar_valid():
+            r.append("solar")
         if get_current_weather_last_update() < 10 * 60:
             r.append("current_weather")
 

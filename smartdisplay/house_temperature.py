@@ -2,6 +2,15 @@ from typing import Dict
 
 from prometheus_api_client import PrometheusConnect  # type:ignore
 
+ROOMS = [
+    "lounge",
+    "kitchen",
+    "mainbedroom",
+    "alexbedroom",
+    "harrietbedroom",
+    "office"
+]
+
 
 def get_house_temperature() -> Dict[str, float]:
     prom = PrometheusConnect(url="http://192.168.1.207:9090")
@@ -10,15 +19,20 @@ def get_house_temperature() -> Dict[str, float]:
     outside = prom.get_current_metric_value(metric_name='prom433_temperature',
                                             label_config=labels)
 
-    return {
-        "lounge": _get_room_temperature(prom, "lounge"),
-        "kitchen": _get_room_temperature(prom, "kitchen"),
-        "mainbedroom": _get_room_temperature(prom, "mainbedroom"),
-        "alexbedroom": _get_room_temperature(prom, "alexbedroom"),
-        "harrietbedroom": _get_room_temperature(prom, "harrietbedroom"),
-        "office": _get_room_temperature(prom, "office"),
-        "outside": float(outside[0]["value"][1]),
-    }
+    data = {}
+
+    for room in ROOMS:
+        try:
+            data[room] = _get_room_temperature(prom, room)
+        except IndexError:
+            pass
+
+    try:
+        data["outside"] = float(outside[0]["value"][1])
+    except IndexError:
+        pass
+
+    return data
 
 
 def _get_room_temperature(prom: PrometheusConnect, room: str) -> float:
