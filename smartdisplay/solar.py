@@ -6,7 +6,7 @@ from prometheus_api_client import PrometheusConnect  # type:ignore
 IMPORT_QUERY = """
 increase(glowprom_import_cumulative_Wh{type="electric"}[24h])
 - on () increase(teslamate_home_kwh_total[24h]) * 1000
-- on () increase(octopus_export[24h])
+- on () increase(octopus_export[24h]) * 1000
 """
 
 CAR_QUERY = "increase(teslamate_home_kwh_total[24h]) * 1000"
