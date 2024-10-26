@@ -1,3 +1,4 @@
+from datetime import datetime, UTC
 import time
 from typing import Dict, Tuple
 
@@ -33,12 +34,19 @@ def is_solar_valid() -> bool:
 def get_current_solar() -> Dict[str, float | str]:
     prom = PrometheusConnect(url="http://192.168.1.207:9090")
 
+    time = datetime.now(tz=UTC).time()
+    since_midnight = time.hour * 60 + time.minute
+
     return {
         "house_wh": _get_query(prom, IMPORT_QUERY),
         "car_wh": _get_query(prom, CAR_QUERY),
         "house_cost": _get_query(prom, HOUSE_COST),
         "car_cost": _get_query(prom, CAR_COST),
         "pv_power": _get_metric(prom, "foxess_pvPower"),
+        "pv_generation":
+            _get_query(prom,
+                       "increase(foxess_pv_generation_total"
+                       + f"[{since_midnight}m])"),
         "battery": _get_metric(prom, "foxess_SoC"),
         "house_load": _get_metric(prom, "foxess_loadsPower"),
         "current_power": _get_metric(prom, "glowprom_power_W"),
