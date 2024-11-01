@@ -7,7 +7,7 @@ from urllib.parse import urlparse, parse_qs
 import sys
 from zoneinfo import ZoneInfo
 
-from sentry_sdk import capture_message  # type:ignore
+from sentry_sdk import capture_message, trace  # type:ignore
 
 from .current_weather import get_current_weather, \
                              get_current_weather_last_update
@@ -16,11 +16,13 @@ from .trains import get_trains_message, get_trains_from_london, \
                     get_trains_to_london
 from .house_temperature import get_house_temperature
 from .solar import get_current_solar, is_solar_valid
+from .water_gas import get_water_gas
 
 SONOS = SonosHandler()
 
 
 class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
+    @trace
     def do_GET(self) -> None:
         data: Any
         if self.path.startswith("/next_screen"):
@@ -64,6 +66,7 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
 
         self.wfile.write(f"Page {self.path} not found".encode("utf8"))
 
+    @trace
     def do_POST(self) -> None:
         file_length = int(self.headers['Content-Length'])
         data = BytesIO()
