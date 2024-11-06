@@ -6,7 +6,7 @@ from prometheus_api_client import PrometheusConnect  # type:ignore
 
 IMPORT_QUERY = """
 increase(glowprom_import_cumulative_Wh{type="electric"}[24h])
-- on () increase(teslamate_home_kwh_total[24h]) * 1000
+- on () sum(increase(teslamate_home_kwh_total[24h])) * 1000
 - on () increase(octopus_export[24h]) * 1000
 """
 
@@ -14,11 +14,11 @@ CAR_QUERY = "increase(teslamate_home_kwh_total[24h]) * 1000"
 
 HOUSE_COST = """
 increase(octopus_cost{type="electric"}[24h])
-- on () delta(teslamate_home_cost_total[24h])
+- on () sum(delta(teslamate_home_cost_total[24h]))
 - on () increase(octopus_feed_in{type="electric"}[24h])
 """
 
-CAR_COST = "delta(teslamate_home_cost_total[24h])"
+CAR_COST = "sum(delta(teslamate_home_cost_total[24h]))"
 
 
 def is_solar_valid() -> bool:
