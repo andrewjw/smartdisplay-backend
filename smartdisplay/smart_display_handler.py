@@ -5,9 +5,10 @@ from io import BytesIO
 from typing import Any, List
 from urllib.parse import urlparse, parse_qs
 import sys
+import traceback
 from zoneinfo import ZoneInfo
 
-from sentry_sdk import capture_message, trace  # type:ignore
+from sentry_sdk import capture_exception, capture_message  # type:ignore
 
 from .current_weather import get_current_weather, \
                              get_current_weather_last_update
@@ -16,13 +17,29 @@ from .trains import get_trains_message, get_trains_from_london, \
                     get_trains_to_london
 from .house_temperature import get_house_temperature
 from .solar import get_current_solar, is_solar_valid
-from .water_gas import get_water_gas
+#from .water_gas import get_water_gas
 
 SONOS = SonosHandler()
 
 
+def handle_error(func):
+    def r(self, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except Exception as e:
+            traceback.print_exception(e)
+            capture_exception(e)
+        
+            self.send_response(500)
+            self.send_header("Content-type", "text/plain")
+            self.end_headers()
+
+            self.wfile.write(f"Exception Occurred.\n".encode("utf8"))
+    return r
+
+
 class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
-    @trace
+    @handle_error
     def do_GET(self) -> None:
         data: Any
         if self.path.startswith("/next_screen"):
@@ -66,7 +83,7 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
 
         self.wfile.write(f"Page {self.path} not found".encode("utf8"))
 
-    @trace
+    @handle_error
     def do_POST(self) -> None:
         file_length = int(self.headers['Content-Length'])
         data = BytesIO()
