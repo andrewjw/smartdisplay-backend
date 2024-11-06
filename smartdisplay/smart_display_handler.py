@@ -17,7 +17,7 @@ from .trains import get_trains_message, get_trains_from_london, \
                     get_trains_to_london
 from .house_temperature import get_house_temperature
 from .solar import get_current_solar, is_solar_valid
-#from .water_gas import get_water_gas
+from .water_gas import get_water_gas
 
 SONOS = SonosHandler()
 
@@ -29,7 +29,7 @@ def handle_error(func):
         except Exception as e:
             traceback.print_exception(e)
             capture_exception(e)
-        
+
             self.send_response(500)
             self.send_header("Content-type", "text/plain")
             self.end_headers()
@@ -59,6 +59,8 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
             data = get_current_weather()
         elif self.path.startswith("/solar"):
             data = get_current_solar()
+        elif self.path.startswith("/water_gas"):
+            data = get_water_gas()
         else:
             self.return404()
             return
@@ -131,6 +133,7 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
         r = ["clock", "house_temperature"]
         if is_solar_valid():
             r.append("solar")
+        r.append("water_gas")
         if get_current_weather_last_update() < 10 * 60:
             r.append("current_weather")
 
