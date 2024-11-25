@@ -137,6 +137,11 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
         if get_current_weather_last_update() < 10 * 60:
             r.append("current_weather")
 
+        if now.month == 12 or (now.month == 1 and now.day < 4):
+            r.append("christmas")
+        if now.month == 12 and now.day < 26:
+            r.append("advent")
+
         hour = now.hour
         if date.today().weekday() in (0, 1):
             if hour in (6, 7, 8):
