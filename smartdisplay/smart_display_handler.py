@@ -12,6 +12,7 @@ from sentry_sdk import capture_exception, capture_message  # type:ignore
 
 from .current_weather import get_current_weather, \
                              get_current_weather_last_update
+from .image import load_image
 from .sonos import SonosHandler
 from .trains import get_trains_message, get_trains_from_london, \
                     get_trains_to_london
@@ -45,7 +46,7 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
         if self.path.startswith("/next_screen"):
             data = self.next_screen()
         elif self.path.startswith("/sonos/art"):
-            self.sonos_art()
+            self.image(SONOS.get_current_album_art())
             return
         elif self.path.startswith("/sonos"):
             data = self.sonos_data()
@@ -61,6 +62,11 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
             data = get_current_solar()
         elif self.path.startswith("/water_gas"):
             data = get_water_gas()
+        elif self.path.startswith("/image"):
+            query_components = parse_qs(urlparse(self.path).query)
+            file_name = query_components["file"][0]
+            self.image(load_image(file_name))
+            return
         else:
             self.return404()
             return
@@ -164,9 +170,8 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
             "album_art": SONOS.get_current_album_art() is not None
         }
 
-    def sonos_art(self) -> Any:
-        art = SONOS.get_current_album_art()
-        if art is None:
+    def image(self, image_data) -> Any:
+        if image_data is None:
             self.send_response(404)
             self.send_header("Content-type", "text/plain")
             self.send_header("Content-length", "4")
@@ -178,7 +183,7 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-length", str(64*64*3))
         self.end_headers()
 
-        self.wfile.write(art)
+        self.wfile.write(image_data)
 
     def trains_to_london(self) -> Any:
         return {
