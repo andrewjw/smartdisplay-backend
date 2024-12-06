@@ -137,6 +137,11 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
             return ["blackout"]
 
         r = ["clock", "house_temperature"]
+
+        if now.month == 12 and now.day < 26 and now.hour < 9:
+            r.append("christmas")
+            r.append("advent")
+
         if is_solar_valid():
             r.append("solar")
         r.append("water_gas")
