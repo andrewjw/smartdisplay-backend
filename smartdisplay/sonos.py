@@ -142,7 +142,7 @@ class SonosHandler:
 @lru_cache(maxsize=20)
 def get_album_art(art_uri: str) -> Optional[bytes]:
     sys.stderr.write(f"Getting album art {art_uri}\n")
-    resp = requests.get(art_uri, stream=True)
+    resp = requests.get(art_uri, stream=True, timeout=10)
     resp.raise_for_status()
     buffer = io.BytesIO()
     try:
