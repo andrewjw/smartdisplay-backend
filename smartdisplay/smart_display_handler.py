@@ -150,7 +150,7 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
 
         if now.month == 12 or (now.month == 1 and now.day < 4):
             r.append("christmas")
-        if now.month == 12 and now.day < 26:
+        if now.month == 12 and now.day < 27:
             r.append("advent")
 
         hour = now.hour
