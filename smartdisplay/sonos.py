@@ -26,7 +26,7 @@ class TrackInfo:
             self.album_art = sonos.fix_album_art_url(track_info)
         if self.album_art is not None and len(self.album_art) > 0:
             try:
-                self.album_art_header: Optional[str] = \
+                self.album_art_header: Optional[bytes] = \
                     get_album_art(self.album_art, True)
                 self.album_art_image: Optional[bytes] = \
                     get_album_art(self.album_art, False)
