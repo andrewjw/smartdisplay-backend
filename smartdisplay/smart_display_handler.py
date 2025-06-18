@@ -46,7 +46,9 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
         if self.path.startswith("/next_screen"):
             data = self.next_screen()
         elif self.path.startswith("/sonos/art"):
-            self.image(SONOS.get_current_album_art())
+            query_components = parse_qs(urlparse(self.path).query)
+            header = query_components.get("header", ["0"])[0] == "1"
+            self.image(SONOS.get_current_album_art(header))
             return
         elif self.path.startswith("/sonos"):
             data = self.sonos_data()
@@ -185,7 +187,7 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
             return
         self.send_response(200)
         self.send_header("Content-type", "application/octet-stream")
-        self.send_header("Content-length", str(64*64*3))
+        self.send_header("Content-length", str(len(image_data)))
         self.end_headers()
 
         self.wfile.write(image_data)

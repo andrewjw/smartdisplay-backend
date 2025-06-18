@@ -20,20 +20,25 @@ class TrackInfo:
         self.artist = track_info["artist"]
         self.album = track_info["album"]
         self.title = track_info["title"]
+        self.album_art_header = track_info["album_art_header"]
         self.album_art = track_info["album_art"]
         print(repr(self.album_art))
         if self.album_art is None or len(self.album_art) == 0:
             self.album_art = sonos.fix_album_art_url(track_info)
         if self.album_art is not None and len(self.album_art) > 0:
             try:
+                self.album_art_header: Optional[str] = \
+                    get_album_art(self.album_art, True)
                 self.album_art_image: Optional[bytes] = \
-                    get_album_art(self.album_art)
+                    get_album_art(self.album_art, False)
             except requests.exceptions.ConnectionError as e:
                 sys.stderr.write("Error loading Album Art\n")
                 sys.stderr.write(str(e))
+                self.album_art_header = None
                 self.album_art_image = None
         else:
             print("no album art url :-(")
+            self.album_art_header = None
             self.album_art_image = None
 
     def __eq__(self, other: object) -> bool:
@@ -101,10 +106,11 @@ class SonosHandler:
             return True
         return False
 
-    def get_current_album_art(self) -> Optional[bytes]:
+    def get_current_album_art(self, header: bool = False) -> Optional[bytes]:
         if self.track_info is None:
             return None
-        return self.track_info.album_art_image
+        return self.track_info.album_art_header if header \
+            else self.track_info.album_art_image
 
     def fix_album_art_url(self, track_info) -> Optional[str]:
         if "metadata" not in track_info:
@@ -140,7 +146,7 @@ class SonosHandler:
 
 
 @lru_cache(maxsize=20)
-def get_album_art(art_uri: str) -> Optional[bytes]:
+def get_album_art(art_uri: str, header: bool) -> Optional[bytes]:
     sys.stderr.write(f"Getting album art {art_uri}\n")
     resp = requests.get(art_uri, stream=True, timeout=10)
     resp.raise_for_status()
@@ -153,6 +159,14 @@ def get_album_art(art_uri: str) -> Optional[bytes]:
     buffer.seek(0)
 
     image_data: List[int] = []
+    if header:
+        image_data.extend(ord(c) for c in "I75v1")
+        image_data.append(64)
+        image_data.append(64)
+        image_data.append(3)
+        expected_size = 8 + 64 * 64 * 3
+    else:
+        expected_size = 64 * 64 * 3
     with Image.open(buffer) as im:
         try:
             im.thumbnail((64, 64), Image.Resampling.NEAREST)
@@ -188,7 +202,7 @@ def get_album_art(art_uri: str) -> Optional[bytes]:
         if yafter > 0:
             image_data.extend([0, 0, 0] * 64 * yafter)
 
-    return struct.pack("B" * (64 * 64 * 3), *image_data)
+    return struct.pack("B" * (expected_size), *image_data)
 
 
 def xml_get_text(nodelist):
