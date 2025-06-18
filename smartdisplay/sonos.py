@@ -20,7 +20,6 @@ class TrackInfo:
         self.artist = track_info["artist"]
         self.album = track_info["album"]
         self.title = track_info["title"]
-        self.album_art_header = track_info["album_art_header"]
         self.album_art = track_info["album_art"]
         print(repr(self.album_art))
         if self.album_art is None or len(self.album_art) == 0:
