@@ -19,6 +19,7 @@ from .trains import get_trains_message, get_trains_from_london, \
 from .house_temperature import get_house_temperature
 from .solar import get_current_solar, is_solar_valid
 from .water_gas import get_water_gas
+from .air_quality import get_air_quality
 
 SONOS = SonosHandler()
 
@@ -64,6 +65,8 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
             data = get_current_solar()
         elif self.path.startswith("/water_gas"):
             data = get_water_gas()
+        elif self.path.startswith("/air_quality"):
+            data = get_air_quality()
         elif self.path.startswith("/image"):
             query_components = parse_qs(urlparse(self.path).query)
             file_name = query_components["file"][0]
@@ -138,7 +141,7 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
            (now.hour == 22 and now.minute >= 30) or now.hour > 22:
             return ["blackout"]
 
-        r = ["clock", "house_temperature"]
+        r = ["clock", "house_temperature", "air_quality"]
 
         if now.month == 12 and now.day < 26 and now.hour < 9:
             r.append("christmas")
