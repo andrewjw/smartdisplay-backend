@@ -44,6 +44,20 @@ def get_air_quality() -> Dict[str, float | str]:
     else:
         pm25_level = "Very Bad"
 
+    if co2 <= 400:
+        co2 = "Min"
+    elif co2 >= 5000:
+        co2 = "Max"
+    else:
+        co2 = f"{int(co2)} ppm"
+
+    if voc >= 60000:
+        voc = "Max"
+    else:
+        voc = f"{int(voc)} ppb"
+
+    pm25 = f"{int(pm25)} ug/m3"
+
     return {
         "co2": co2,
         "co2_level": co2_level,
