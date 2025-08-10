@@ -12,6 +12,8 @@ def get_current_weather_last_update() -> float:
     prom = PrometheusConnect(url="http://192.168.1.207:9090")
 
     last_message = _get_weather_metric(prom, "last_message")
+    if last_message is None:
+        return 24 * 60 * 60
 
     return time.time() - last_message
 
@@ -40,6 +42,8 @@ def get_current_weather() -> Dict[str, float | str]:
 
 def get_pressure(prom: PrometheusConnect) -> Tuple[float, str, str]:
     data = prom.get_current_metric_value(metric_name="bge_pressure")
+    if len(data) == 0:
+        return 1000.0, "level", "Unknown"
 
     pressure = float(data[0]["value"][1])
 
@@ -57,7 +61,9 @@ def get_pressure(prom: PrometheusConnect) -> Tuple[float, str, str]:
     else:
         text = "Very Dry"
 
-    if change > 0.5:
+    if change is None:
+        return pressure, "level", text
+    elif change > 0.5:
         return pressure, "increasing", text
     elif change < -0.5:
         return pressure, "decreasing", text
@@ -88,17 +94,21 @@ def get_wind_dir(prom: PrometheusConnect) -> str:
     return "N"
 
 
-def _get_weather_metric(prom: PrometheusConnect, metric: str) -> float:
+def _get_weather_metric(prom: PrometheusConnect, metric: str) -> float | None:
     data = prom.get_current_metric_value(metric_name='prom433_' + metric,
                                          label_config={"model":
                                                        "Fineoffset-WS90"})
-
+ 
+    if len(data) == 0:
+        return None
     return float(data[0]["value"][1])
 
 
-def _get_weather_query(prom: PrometheusConnect, query: str) -> float:
+def _get_weather_query(prom: PrometheusConnect, query: str) -> float | None:
     data = prom.custom_query(query)
 
+    if len(data) == 0:
+        return None
     return float(data[0]["value"][1])
 
 
