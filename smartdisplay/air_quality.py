@@ -6,10 +6,11 @@ from prometheus_api_client import PrometheusConnect  # type:ignore
 def get_air_quality() -> Dict[str, float | str]:
     prom = PrometheusConnect(url="http://192.168.1.207:9090")
 
-    co2 = _get_query(prom, "avg_over_time(bge_co2[5m])")
+    co2: float = _get_query(prom, "avg_over_time(bge_co2[5m])")
     voc = _get_query(prom, "avg_over_time(bge_voc[5m])")
     pm25 = _get_query(prom,
-                       "avg_over_time(bge_airqual_standard{psize=\"2.5\"}[10m])")
+                      "avg_over_time("
+                      + "bge_airqual_standard{psize=\"2.5\"}[10m])")
 
     if co2 < 500:
         co2_level = "Great"
@@ -45,25 +46,23 @@ def get_air_quality() -> Dict[str, float | str]:
         pm25_level = "Very Bad"
 
     if co2 <= 400:
-        co2 = "Min"
+        co2_text = "Min"
     elif co2 >= 5000:
-        co2 = "Max"
+        co2_text = "Max"
     else:
-        co2 = f"{int(co2)} ppm"
+        co2_text = f"{int(co2)} ppm"
 
     if voc >= 60000:
-        voc = "Max"
+        voc_text = "Max"
     else:
-        voc = f"{int(voc)} ppb"
-
-    pm25 = f"{int(pm25)} ug/m3"
+        voc_text = f"{int(voc)} ppb"
 
     return {
-        "co2": co2,
+        "co2": co2_text,
         "co2_level": co2_level,
-        "voc": voc,
+        "voc": voc_text,
         "voc_level": voc_level,
-        "pm25": pm25,
+        "pm25": f"{int(pm25)} ug/m3",
         "pm25_level": pm25_level
     }
 
@@ -72,7 +71,3 @@ def _get_query(prom: PrometheusConnect, query: str) -> float:
     data = prom.custom_query(query)
 
     return float(data[0]["value"][1])
-
-
-if __name__ == "__main__":
-    print(get_water_gas())

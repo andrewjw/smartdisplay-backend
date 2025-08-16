@@ -18,16 +18,18 @@ def get_current_weather_last_update() -> float:
     return time.time() - last_message
 
 
-def get_current_weather() -> Dict[str, float | str]:
+def get_current_weather() -> Dict[str, float | str | None]:
     prom = PrometheusConnect(url="http://192.168.1.207:9090")
 
     pressure, pressure_change, pressure_text = get_pressure(prom)
+
+    uv = _get_weather_query(prom, UVI_QUERY)
 
     return {
         "temperature": _get_weather_metric(prom, "temperature"),
         "humidity": _get_weather_metric(prom, "humidity"),
         "lux": _get_weather_metric(prom, "light_lux"),
-        "uv": round(_get_weather_query(prom, UVI_QUERY)),
+        "uv": round(uv) if uv is not None else None,
         "gust": _get_weather_metric(prom, "wind_max_m"),
         "wind": _get_weather_metric(prom, "wind_avg_m"),
         "winddir": get_wind_dir(prom),
@@ -75,6 +77,8 @@ def get_wind_dir(prom: PrometheusConnect) -> str:
     direction = _get_weather_query(prom,
                                    "avg_over_time(prom433_wind_dir_deg[15m])")
 
+    if direction is None:
+        return "?"
     if direction < 22.5:
         return "N"
     if direction < 22.5 + 45:
@@ -98,7 +102,7 @@ def _get_weather_metric(prom: PrometheusConnect, metric: str) -> float | None:
     data = prom.get_current_metric_value(metric_name='prom433_' + metric,
                                          label_config={"model":
                                                        "Fineoffset-WS90"})
- 
+
     if len(data) == 0:
         return None
     return float(data[0]["value"][1])
