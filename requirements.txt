@@ -3,7 +3,7 @@ pillow==11.0.0
 requests==2.32.5
 types-requests==2.32.0.20241016
 types-Pillow==10.2.0.20240822
-pycodestyle==2.12.1
+pycodestyle==2.14.0
 mypy==1.17.1
 nre-darwin-py==0.4.0
 sentry-sdk==2.35.0
