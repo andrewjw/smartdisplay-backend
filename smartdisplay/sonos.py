@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from datetime import datetime
+from datetime import datetime, UTC
 from functools import lru_cache
 import io
 import math
@@ -158,7 +158,7 @@ def process_event_track_metadata(metadata: Dict[str, Any],
 
 class TrackInfo:
     def __init__(self, track_info: Any, sonos_uri: str) -> None:
-        self.created = datetime.utcnow()
+        self.created = datetime.now(UTC)
         self.artist = track_info["artist"]
         self.album = track_info["album"]
         self.title = track_info["title"]
@@ -224,11 +224,12 @@ class SonosHandler:
         if self._last_track_info is None \
                 or self.track_info != self._last_track_info:
             self._last_track_info = self.track_info
-            self.last_display_time = datetime.utcnow()
+            self.last_display_time = datetime.now(UTC)
             return True
-        gap = self.track_info.created - self._last_track_info.created
+        gap = datetime.now(UTC) - self.track_info.created
         if abs(gap.total_seconds()) > 60 * 5:
-            self.last_display_time = datetime.utcnow()
+            self.track_info.created = datetime.now(UTC)
+            self.last_display_time = datetime.now(UTC)
             return True
         return False
 
@@ -247,9 +248,9 @@ class SonosHandler:
     def show_quick(self) -> bool:
         if self._last_display_time is None:
             return False
-        if (datetime.utcnow() - self._last_display_time).total_seconds() \
+        if (datetime.now(UTC) - self._last_display_time).total_seconds() \
            > 2 * 60:
-            self._last_display_time = datetime.utcnow()
+            self._last_display_time = datetime.now(UTC)
             return True
         return False
 
