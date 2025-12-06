@@ -68,6 +68,7 @@ class Terminator:
         self._terminate = False
 
     def terminate(self) -> None:
+        print("Terminating!")
         self._terminate = True
 
     def is_terminated(self) -> bool:
@@ -81,6 +82,7 @@ def sonos_watcher(handler: "SonosHandler", terminator: Terminator) -> None:
         while "Kitchen" not in devices:
             devices = {device.player_name: device
                        for device in soco.discover(timeout=60)}
+        print("sonos got kitchen")
 
         subscription = soco.services.AVTransport(devices["Kitchen"]) \
             .subscribe(auto_renew=True)
@@ -94,11 +96,12 @@ def sonos_watcher(handler: "SonosHandler", terminator: Terminator) -> None:
                     continue
                 if "current_track_meta_data" in event.variables \
                         and event.variables["current_track_meta_data"] != "":
+                    print("sonos", event.variables["current_track_meta_data"].to_dict())
                     track_info = process_event_track_metadata(
                         event.variables["current_track_meta_data"].to_dict(),
                         devices["Kitchen"])
                     handler.track_info = track_info
-                    print(track_info)
+                    print("sonos", track_info)
             except queue.Empty:
                 pass
     except Exception as e:
@@ -107,6 +110,7 @@ def sonos_watcher(handler: "SonosHandler", terminator: Terminator) -> None:
         sys.stderr.flush()
         capture_exception(e)
     finally:
+        print("Sonos watcher is shutting down!")
         handler.track_info = None
         if subscription is not None:
             try:
@@ -172,6 +176,12 @@ class TrackInfo:
                     get_album_art(self.album_art, True)
                 self.album_art_image: Optional[bytes] = \
                     get_album_art(self.album_art, False)
+            except requests.exceptions.HTTPError as e:
+                if e.response.status_code != 403:
+                    raise
+                sys.stderr.write(f"Got error {e.response.status_code} accessing {self.album_art}.")
+                self.album_art_header = None
+                self.album_art_image = None
             except requests.exceptions.ConnectionError as e:
                 sys.stderr.write("Error loading Album Art\n")
                 sys.stderr.write(repr(e))
@@ -206,12 +216,14 @@ class SonosHandler:
         self._last_display_time: Optional[datetime] = None
 
         self._terminator = Terminator()
+        print("starting sonos watcher")
         self._thread = threading.Thread(target=sonos_watcher,
                                         args=(self, self._terminator))
         self._thread.daemon = True
         self._thread.start()
 
     def __del__(self):
+        print("SonosHandler shutting down...")
         self._terminator.terminate()
         if self._thread.is_alive():
             self._thread.join(timeout=5)
