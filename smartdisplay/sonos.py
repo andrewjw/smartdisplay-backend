@@ -9,6 +9,7 @@ import struct
 import sys
 import threading
 import time
+import traceback
 from typing import Any, Dict, Optional, List
 from xml.dom.minidom import parseString
 
@@ -64,32 +65,59 @@ CURRENT_TRACK_INFO: Optional["TrackInfo"] = None
 
 
 class Terminator:
-    def __init__(self) -> None:
+    def __init__(self, device_name: str) -> None:
         self._terminate = False
+        self.device_name = device_name
 
     def terminate(self) -> None:
-        print("Terminating!")
+        print(f"Terminating {self.device_name}!")
         self._terminate = True
 
     def is_terminated(self) -> bool:
         return self._terminate
 
 
-def sonos_watcher(handler: "SonosHandler", terminator: Terminator) -> None:
+def sonos_watcher(device_name: str,
+                  handler: "SonosHandler",
+                  terminator: Terminator,
+                  primary: bool) -> None:
     devices = {}
     subscription = None
+
+    other_device_terminator: Optional[Terminator] = None
+
     try:
-        while "Kitchen" not in devices:
+        while device_name not in devices:
             devices = {device.player_name: device
                        for device in soco.discover(timeout=60)}
-        print("sonos got kitchen")
+        print(f"sonos got {device_name}")
 
-        subscription = soco.services.AVTransport(devices["Kitchen"]) \
+        subscription = soco.services.AVTransport(devices[device_name]) \
             .subscribe(auto_renew=True)
 
         while not terminator.is_terminated():
             try:
                 event = subscription.events.get(timeout=5)
+
+                coordinator = devices[device_name] \
+                    .group.coordinator.player_name
+                if primary and coordinator != device_name:
+                    if other_device_terminator is None:
+                        print(f"sonos {device_name} is not coordinator, " +
+                              f"switching to {coordinator}")
+                        other_device_terminator = Terminator(coordinator)
+                        threading.Thread(
+                            target=sonos_watcher,
+                            args=(coordinator,
+                                  handler,
+                                  other_device_terminator,
+                                  False)).start()
+                    continue
+                elif other_device_terminator is not None:
+                    print(f"sonos {device_name} is now coordinator, " +
+                          f"stopping other watcher")
+                    other_device_terminator.terminate()
+                    other_device_terminator = None
 
                 if event.variables.get("transport_state", None) != "PLAYING":
                     handler.track_info = None
@@ -107,11 +135,11 @@ def sonos_watcher(handler: "SonosHandler", terminator: Terminator) -> None:
                 pass
     except Exception as e:
         sys.stderr.write("Error in sonos_watcher:\n")
-        sys.stderr.write(repr(e) + "\n")
+        traceback.print_exc(file=sys.stderr)
         sys.stderr.flush()
         capture_exception(e)
     finally:
-        print("Sonos watcher is shutting down!")
+        print(f"Sonos watcher for {device_name} is shutting down!")
         handler.track_info = None
         if subscription is not None:
             try:
@@ -216,10 +244,13 @@ class SonosHandler:
         self.last_screen = "sonos"
         self._last_display_time: Optional[datetime] = None
 
-        self._terminator = Terminator()
+        self._terminator = Terminator("Kitchen")
         print("starting sonos watcher")
         self._thread = threading.Thread(target=sonos_watcher,
-                                        args=(self, self._terminator))
+                                        args=("Kitchen",
+                                              self,
+                                              self._terminator,
+                                              True))
         self._thread.daemon = True
         self._thread.start()
 
