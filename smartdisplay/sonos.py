@@ -178,8 +178,6 @@ class TrackInfo:
                 self.album_art_image: Optional[bytes] = \
                     get_album_art(self.album_art, False)
             except requests.exceptions.HTTPError as e:
-                if e.response.status_code != 403:
-                    raise
                 sys.stderr.write(
                     f"Got error {e.response.status_code} "
                     f"accessing {self.album_art}.")
