@@ -96,6 +96,7 @@ def get_trains_message() -> Optional[str]:
     while "  " in msg:
         msg = msg.replace("  ", " ")
     msg = msg.replace(" More details can be found in Latest Travel News.", "")
+    msg = msg.replace(" Latest information can be found in Status and Disruptions.", "")
     return msg.strip()
 
 
