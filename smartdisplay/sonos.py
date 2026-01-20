@@ -77,14 +77,58 @@ class Terminator:
         return self._terminate
 
 
+def topology_watcher(handler: "SonosHandler", terminator: Terminator) -> None:
+    try:
+        subterminator = None
+        last_coordinator: Optional[str] = None
+
+        devices = {}
+        while "Kitchen" not in devices:
+            devices = {device.player_name: device
+                       for device in soco.discover(timeout=60)}
+        print(f"sonos got Kitchen")
+
+        kitchen = devices["Kitchen"]
+        # sub = soco.services.ZoneGroupTopology(kitchen)
+        #       .subscribe(auto_renew=True)
+
+        while not terminator.is_terminated():
+            print("Checking topology...")
+            coordinator = kitchen.group.coordinator.player_name
+            print(f"{coordinator} is coordinator")
+
+            if last_coordinator != coordinator:
+                if last_coordinator is not None:
+                    print(f"Stopping sonos_watcher for {last_coordinator}")
+                    if subterminator is not None:
+                        subterminator.terminate()
+                print(f"Starting sonos_watcher for {coordinator}")
+                last_coordinator = coordinator
+                subterminator = Terminator(coordinator)
+                thread = threading.Thread(target=sonos_watcher,
+                                          args=(coordinator,
+                                                handler,
+                                                subterminator))
+                thread.daemon = True
+                thread.start()
+
+            time.sleep(5 * 30)
+    except Exception as e:
+        sys.stderr.write("Error in topology_watcher:\n")
+        traceback.print_exc(file=sys.stderr)
+        sys.stderr.flush()
+        capture_exception(e)
+    finally:
+        print(f"Topology watcher is shutting down!")
+        if subterminator is not None:
+            subterminator.terminate()
+
+
 def sonos_watcher(device_name: str,
                   handler: "SonosHandler",
-                  terminator: Terminator,
-                  primary: bool) -> None:
+                  terminator: Terminator) -> None:
     devices = {}
     subscription = None
-
-    other_device_terminator: Optional[Terminator] = None
 
     try:
         while device_name not in devices:
@@ -98,26 +142,6 @@ def sonos_watcher(device_name: str,
         while not terminator.is_terminated():
             try:
                 event = subscription.events.get(timeout=5)
-
-                coordinator = devices[device_name] \
-                    .group.coordinator.player_name
-                if primary and coordinator != device_name:
-                    if other_device_terminator is None:
-                        print(f"sonos {device_name} is not coordinator, " +
-                              f"switching to {coordinator}")
-                        other_device_terminator = Terminator(coordinator)
-                        threading.Thread(
-                            target=sonos_watcher,
-                            args=(coordinator,
-                                  handler,
-                                  other_device_terminator,
-                                  False)).start()
-                    continue
-                elif other_device_terminator is not None:
-                    print(f"sonos {device_name} is now coordinator, " +
-                          f"stopping other watcher")
-                    other_device_terminator.terminate()
-                    other_device_terminator = None
 
                 if event.variables.get("transport_state", None) != "PLAYING":
                     handler.track_info = None
@@ -244,13 +268,10 @@ class SonosHandler:
         self.last_screen = "sonos"
         self._last_display_time: Optional[datetime] = None
 
-        self._terminator = Terminator("Kitchen")
+        self._terminator = Terminator("TopologyWatcher")
         print("starting sonos watcher")
-        self._thread = threading.Thread(target=sonos_watcher,
-                                        args=("Kitchen",
-                                              self,
-                                              self._terminator,
-                                              True))
+        self._thread = threading.Thread(target=topology_watcher,
+                                        args=(self, self._terminator,))
         self._thread.daemon = True
         self._thread.start()
 
