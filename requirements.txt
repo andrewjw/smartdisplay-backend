@@ -7,4 +7,4 @@ pycodestyle==2.14.0
 mypy==2.3.0
 nre-darwin-py==0.4.1
 sentry-sdk==2.48.0
-prometheus-api-client==0.7.0
+prometheus-api-client==0.7.2
