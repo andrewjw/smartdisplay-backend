@@ -18,12 +18,13 @@ def main(port) -> None:
 
     while True:
         try:
-            with socketserver.TCPServer(("", port), SmartDisplayHandler) as httpd:
+            with socketserver.TCPServer(("", port),
+                                        SmartDisplayHandler) as httpd:
                 httpd.allow_reuse_address = True
                 print("serving at port", port)
                 httpd.serve_forever()
         except OSError as e:
-            if e.errno == 98: # Address already in use
+            if e.errno == 98:  # Address already in use
                 continue
             raise
 
