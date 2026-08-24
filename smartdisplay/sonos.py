@@ -92,10 +92,15 @@ def topology_watcher(handler: "SonosHandler", terminator: Terminator) -> None:
         # sub = soco.services.ZoneGroupTopology(kitchen)
         #       .subscribe(auto_renew=True)
 
+        thread: threading.Thread | None = None
+
         while not terminator.is_terminated():
             print("Checking topology...")
             coordinator = kitchen.group.coordinator.player_name
             print(f"{coordinator} is coordinator")
+
+            if thread is not None and not thread.is_alive():
+                last_coordinator = None
 
             if last_coordinator != coordinator:
                 if last_coordinator is not None:
@@ -142,6 +147,11 @@ def sonos_watcher(device_name: str,
         while not terminator.is_terminated():
             try:
                 event = subscription.events.get(timeout=5)
+
+                print(f"subscription for {device_name} has "
+                      + f"{subscription.time_left}s left.")
+                if subscription.time_left <= 0:
+                    break
 
                 if event.variables.get("transport_state", None) != "PLAYING":
                     handler.track_info = None
