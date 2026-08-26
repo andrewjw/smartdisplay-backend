@@ -4,7 +4,7 @@ requests==2.34.2
 types-requests==2.33.0.20260712
 types-Pillow==10.2.0.20240822
 pycodestyle==2.14.0
-mypy==2.3.0
+mypy==2.3.1
 nre-darwin-py==0.4.1
 sentry-sdk==2.66.1
 prometheus-api-client==0.7.2
