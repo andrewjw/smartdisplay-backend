@@ -68,6 +68,13 @@ class Terminator:
     def __init__(self, device_name: str) -> None:
         self._terminate = False
         self.device_name = device_name
+        self.last_update = datetime.now(UTC)
+
+    def update(self) -> None:
+        self.last_update = datetime.now(UTC)
+
+    def has_timed_out(self) -> bool:
+        return (datetime.now(UTC) - self.last_update).total_seconds() > 60 * 15
 
     def terminate(self) -> None:
         print(f"Terminating {self.device_name}!")
@@ -102,9 +109,14 @@ def topology_watcher(handler: "SonosHandler", terminator: Terminator) -> None:
             if thread is not None and not thread.is_alive():
                 last_coordinator = None
 
-            if last_coordinator != coordinator:
+            if last_coordinator != coordinator \
+                    or subterminator is None \
+                    or subterminator.has_timed_out():
                 if last_coordinator is not None:
-                    print(f"Stopping sonos_watcher for {last_coordinator}")
+                    timed_out = subterminator is None \
+                        or subterminator.has_timed_out()
+                    print(f"Stopping sonos_watcher for {last_coordinator}. " +
+                          f"Has timed out: {timed_out}")
                     if subterminator is not None:
                         subterminator.terminate()
                 print(f"Starting sonos_watcher for {coordinator}")
@@ -148,6 +160,7 @@ def sonos_watcher(device_name: str,
             try:
                 event = subscription.events.get(timeout=5)
 
+                terminator.update()
                 print(f"subscription for {device_name} has "
                       + f"{subscription.time_left}s left.")
                 if subscription.time_left <= 0:
