@@ -16,7 +16,7 @@ from xml.dom.minidom import parseString
 from PIL import Image
 import requests
 
-from sentry_sdk import capture_exception  # type:ignore
+from sentry_sdk import capture_exception  # type: ignore
 import soco  # type: ignore
 
 # Apple Music
@@ -91,8 +91,9 @@ def topology_watcher(handler: "SonosHandler", terminator: Terminator) -> None:
 
         devices = {}
         while "Kitchen" not in devices:
-            devices = {device.player_name: device
-                       for device in soco.discover(timeout=60)}
+            devices = {
+                device.player_name: device for device in soco.discover(timeout=60)
+            }
         print(f"sonos got Kitchen")
 
         kitchen = devices["Kitchen"]
@@ -109,23 +110,25 @@ def topology_watcher(handler: "SonosHandler", terminator: Terminator) -> None:
             if thread is not None and not thread.is_alive():
                 last_coordinator = None
 
-            if last_coordinator != coordinator \
-                    or subterminator is None \
-                    or subterminator.has_timed_out():
+            if (
+                last_coordinator != coordinator
+                or subterminator is None
+                or subterminator.has_timed_out()
+            ):
                 if last_coordinator is not None:
-                    timed_out = subterminator is None \
-                        or subterminator.has_timed_out()
-                    print(f"Stopping sonos_watcher for {last_coordinator}. " +
-                          f"Has timed out: {timed_out}")
+                    timed_out = subterminator is None or subterminator.has_timed_out()
+                    print(
+                        f"Stopping sonos_watcher for {last_coordinator}. "
+                        + f"Has timed out: {timed_out}"
+                    )
                     if subterminator is not None:
                         subterminator.terminate()
                 print(f"Starting sonos_watcher for {coordinator}")
                 last_coordinator = coordinator
                 subterminator = Terminator(coordinator)
-                thread = threading.Thread(target=sonos_watcher,
-                                          args=(coordinator,
-                                                handler,
-                                                subterminator))
+                thread = threading.Thread(
+                    target=sonos_watcher, args=(coordinator, handler, subterminator)
+                )
                 thread.daemon = True
                 thread.start()
 
@@ -141,46 +144,56 @@ def topology_watcher(handler: "SonosHandler", terminator: Terminator) -> None:
             subterminator.terminate()
 
 
-def sonos_watcher(device_name: str,
-                  handler: "SonosHandler",
-                  terminator: Terminator) -> None:
+def sonos_watcher(
+    device_name: str, handler: "SonosHandler", terminator: Terminator
+) -> None:
     devices = {}
     subscription = None
 
     try:
         while device_name not in devices:
-            devices = {device.player_name: device
-                       for device in soco.discover(timeout=60)}
+            devices = {
+                device.player_name: device for device in soco.discover(timeout=60)
+            }
         print(f"sonos got {device_name}")
 
-        subscription = soco.services.AVTransport(devices[device_name]) \
-            .subscribe(auto_renew=True)
+        subscription = soco.services.AVTransport(devices[device_name]).subscribe(
+            auto_renew=True
+        )
 
         while not terminator.is_terminated():
             try:
                 event = subscription.events.get(timeout=5)
 
                 terminator.update()
-                print(f"subscription for {device_name} has "
-                      + f"{subscription.time_left}s left.")
+                print(
+                    f"subscription for {device_name} has "
+                    + f"{subscription.time_left}s left."
+                )
                 if subscription.time_left <= 0:
                     break
 
                 if event.variables.get("transport_state", None) != "PLAYING":
-                    print(f"sonos not playing. {event.variables.get("transport_state", None)}")
+                    print(
+                        f"sonos not playing. {event.variables.get("transport_state", None)}"
+                    )
                     handler.track_info = None
                     continue
-                if "current_track_meta_data" in event.variables \
-                        and event.variables["current_track_meta_data"] != "":
+                if (
+                    "current_track_meta_data" in event.variables
+                    and event.variables["current_track_meta_data"] != ""
+                ):
                     meta_data = event.variables["current_track_meta_data"]
                     print("sonos", meta_data.to_dict())
                     track_info = process_event_track_metadata(
-                        meta_data.to_dict(),
-                        devices["Kitchen"])
+                        meta_data.to_dict(), devices["Kitchen"]
+                    )
                     handler.track_info = track_info
                     print("sonos", track_info)
                 else:
-                    print(f"sonos playing but no current track. {event.variables.get("transport_state", None)} {event.variables.get("current_track_meta_data", None)}")
+                    print(
+                        f"sonos playing but no current track. {event.variables.get("transport_state", None)} {event.variables.get("current_track_meta_data", None)}"
+                    )
             except queue.Empty:
                 pass
     except Exception as e:
@@ -204,35 +217,39 @@ def stream_content_split(stream_content: str, key: str) -> str:
     return ""
 
 
-def process_event_track_metadata(metadata: Dict[str, Any],
-                                 device: Any) -> Optional["TrackInfo"]:
+def process_event_track_metadata(
+    metadata: Dict[str, Any], device: Any
+) -> Optional["TrackInfo"]:
     if "creator" in metadata and len(metadata["creator"]) > 0:
-        return TrackInfo({
-            "artist": metadata["creator"],
-            "album": metadata.get("album", ""),
-            "title": metadata.get("title", ""),
-            "album_art": metadata.get("album_art_uri", "")
-        }, device.ip_address)
+        return TrackInfo(
+            {
+                "artist": metadata["creator"],
+                "album": metadata.get("album", ""),
+                "title": metadata.get("title", ""),
+                "album_art": metadata.get("album_art_uri", ""),
+            },
+            device.ip_address,
+        )
     elif "stream_content" in metadata and len(metadata["stream_content"]) > 0:
-        return TrackInfo({
-            "artist": stream_content_split(
-                metadata["stream_content"],
-                "|ARTIST "),
-            "album": stream_content_split(
-                metadata["stream_content"],
-                "|ALBUM "),
-            "title": stream_content_split(
-                metadata["stream_content"],
-                "|TITLE "),
-            "album_art": metadata.get("album_art_uri", "")
-        }, device.ip_address)
+        return TrackInfo(
+            {
+                "artist": stream_content_split(metadata["stream_content"], "|ARTIST "),
+                "album": stream_content_split(metadata["stream_content"], "|ALBUM "),
+                "title": stream_content_split(metadata["stream_content"], "|TITLE "),
+                "album_art": metadata.get("album_art_uri", ""),
+            },
+            device.ip_address,
+        )
     elif "title" in metadata and len(metadata["title"]) > 0:
-        return TrackInfo({
-            "artist": "",
-            "album": "",
-            "title": metadata["title"],
-            "album_art": metadata.get("album_art_uri", "")
-        }, device.ip_address)
+        return TrackInfo(
+            {
+                "artist": "",
+                "album": "",
+                "title": metadata["title"],
+                "album_art": metadata.get("album_art_uri", ""),
+            },
+            device.ip_address,
+        )
     else:
         sys.stderr.write("Unknown metadata format:\n")
         sys.stderr.write(repr(metadata) + "\n")
@@ -251,14 +268,17 @@ class TrackInfo:
 
         if self.album_art is not None and len(self.album_art) > 0:
             try:
-                self.album_art_header: Optional[bytes] = \
-                    get_album_art(self.album_art, True)
-                self.album_art_image: Optional[bytes] = \
-                    get_album_art(self.album_art, False)
+                self.album_art_header: Optional[bytes] = get_album_art(
+                    self.album_art, True
+                )
+                self.album_art_image: Optional[bytes] = get_album_art(
+                    self.album_art, False
+                )
             except requests.exceptions.HTTPError as e:
                 sys.stderr.write(
                     f"Got error {e.response.status_code} "
-                    f"accessing {self.album_art}.")
+                    f"accessing {self.album_art}."
+                )
                 self.album_art_header = None
                 self.album_art_image = None
             except requests.exceptions.ConnectionError as e:
@@ -276,15 +296,21 @@ class TrackInfo:
             return True
         if not isinstance(other, TrackInfo):
             return False
-        return self.artist == other.artist and self.album == other.album and \
-            self.title == other.title and self.album_art == self.album_art
+        return (
+            self.artist == other.artist
+            and self.album == other.album
+            and self.title == other.title
+            and self.album_art == self.album_art
+        )
 
     def __neq__(self, other: "TrackInfo") -> bool:
         return not (self == other)
 
     def __str__(self):
-        return f"<TrackInfo '{self.artist}' '{self.album}' '{self.title}'" + \
-               f" {self.album_art_image is not None}>"
+        return (
+            f"<TrackInfo '{self.artist}' '{self.album}' '{self.title}'"
+            + f" {self.album_art_image is not None}>"
+        )
 
 
 class SonosHandler:
@@ -296,8 +322,13 @@ class SonosHandler:
 
         self._terminator = Terminator("TopologyWatcher")
         print("starting sonos watcher")
-        self._thread = threading.Thread(target=topology_watcher,
-                                        args=(self, self._terminator,))
+        self._thread = threading.Thread(
+            target=topology_watcher,
+            args=(
+                self,
+                self._terminator,
+            ),
+        )
         self._thread.daemon = True
         self._thread.start()
 
@@ -312,8 +343,7 @@ class SonosHandler:
             self.last_display_time = None
             self._last_track_info = None
             return False
-        if self._last_track_info is None \
-                or self.track_info != self._last_track_info:
+        if self._last_track_info is None or self.track_info != self._last_track_info:
             self._last_track_info = self.track_info
             self.last_display_time = datetime.now(UTC)
             return True
@@ -327,8 +357,11 @@ class SonosHandler:
     def get_current_album_art(self, header: bool = False) -> Optional[bytes]:
         if self.track_info is None:
             return None
-        return self.track_info.album_art_header if header \
+        return (
+            self.track_info.album_art_header
+            if header
             else self.track_info.album_art_image
+        )
 
     def set_last_screen(self, screen: str) -> None:
         self.last_screen = screen
@@ -339,8 +372,7 @@ class SonosHandler:
     def show_quick(self) -> bool:
         if self._last_display_time is None:
             return False
-        if (datetime.now(UTC) - self._last_display_time).total_seconds() \
-           > 2 * 60:
+        if (datetime.now(UTC) - self._last_display_time).total_seconds() > 2 * 60:
             self._last_display_time = datetime.now(UTC)
             return True
         return False
@@ -411,11 +443,12 @@ def xml_get_text(nodelist):
     for node in nodelist:
         if node.nodeType == node.TEXT_NODE:
             rc.append(node.data)
-    return ''.join(rc)
+    return "".join(rc)
 
 
 if __name__ == "__main__":
     import time
+
     handler = SonosHandler()
 
     while True:

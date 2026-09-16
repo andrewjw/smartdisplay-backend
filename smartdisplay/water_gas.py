@@ -1,6 +1,6 @@
 from typing import Dict
 
-from prometheus_api_client import PrometheusConnect  # type:ignore
+from prometheus_api_client import PrometheusConnect  # type: ignore
 
 
 def get_water_gas() -> Dict[str, float | str]:
@@ -9,11 +9,8 @@ def get_water_gas() -> Dict[str, float | str]:
     return {
         "water_day": _get_query(prom, "increase(watermeter_count[24h])"),
         "water_cost": _get_query(prom, "increase(watercost_total[24h])"),
-        "gas_day":
-            _get_query(prom,
-                       "increase(glowprom_import_cumulativevol_m3[24h])"),
-        "gas_cost": _get_query(prom,
-                               "increase(octopus_cost{type=\"gas\"}[24h])"),
+        "gas_day": _get_query(prom, "increase(glowprom_import_cumulativevol_m3[24h])"),
+        "gas_cost": _get_query(prom, 'increase(octopus_cost{type="gas"}[24h])'),
     }
 
 

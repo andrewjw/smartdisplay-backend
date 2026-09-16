@@ -1,11 +1,11 @@
 import time
 from typing import Dict, Tuple
 
-from prometheus_api_client import PrometheusConnect  # type:ignore
+from prometheus_api_client import PrometheusConnect  # type: ignore
 
-UVI_QUERY = "avg_over_time(prom433_uvi{model=\"Fineoffset-WS90\"}[30m])"
+UVI_QUERY = 'avg_over_time(prom433_uvi{model="Fineoffset-WS90"}[30m])'
 
-RAIN_QUERY = "increase(prom433_rain{model=\"Fineoffset-WS90\"}[%s])"
+RAIN_QUERY = 'increase(prom433_rain{model="Fineoffset-WS90"}[%s])'
 
 
 def get_current_weather_last_update() -> float:
@@ -33,12 +33,12 @@ def get_current_weather() -> Dict[str, float | str | None]:
         "gust": _get_weather_metric(prom, "wind_max_m"),
         "wind": _get_weather_metric(prom, "wind_avg_m"),
         "winddir": get_wind_dir(prom),
-        "rain_24h": _get_weather_query(prom, RAIN_QUERY % ("24h", )),
-        "rain_1h": _get_weather_query(prom, RAIN_QUERY % ("1h", )),
-        "rain_20m": _get_weather_query(prom, RAIN_QUERY % ("20m", )),
+        "rain_24h": _get_weather_query(prom, RAIN_QUERY % ("24h",)),
+        "rain_1h": _get_weather_query(prom, RAIN_QUERY % ("1h",)),
+        "rain_20m": _get_weather_query(prom, RAIN_QUERY % ("20m",)),
         "pressure": pressure,
         "pressure_change": pressure_change,
-        "pressure_text": pressure_text
+        "pressure_text": pressure_text,
     }
 
 
@@ -49,8 +49,7 @@ def get_pressure(prom: PrometheusConnect) -> Tuple[float, str, str]:
 
     pressure = float(data[0]["value"][1])
 
-    change = _get_weather_query(prom,
-                                "bge_pressure - (bge_pressure offset 2h)")
+    change = _get_weather_query(prom, "bge_pressure - (bge_pressure offset 2h)")
 
     if pressure < 965:
         text = "Stormy"
@@ -74,8 +73,7 @@ def get_pressure(prom: PrometheusConnect) -> Tuple[float, str, str]:
 
 
 def get_wind_dir(prom: PrometheusConnect) -> str:
-    direction = _get_weather_query(prom,
-                                   "avg_over_time(prom433_wind_dir_deg[15m])")
+    direction = _get_weather_query(prom, "avg_over_time(prom433_wind_dir_deg[15m])")
 
     if direction is None:
         return "?"
@@ -99,9 +97,9 @@ def get_wind_dir(prom: PrometheusConnect) -> str:
 
 
 def _get_weather_metric(prom: PrometheusConnect, metric: str) -> float | None:
-    data = prom.get_current_metric_value(metric_name='prom433_' + metric,
-                                         label_config={"model":
-                                                       "Fineoffset-WS90"})
+    data = prom.get_current_metric_value(
+        metric_name="prom433_" + metric, label_config={"model": "Fineoffset-WS90"}
+    )
 
     if len(data) == 0:
         return None

@@ -8,14 +8,12 @@ import sys
 import traceback
 from zoneinfo import ZoneInfo
 
-from sentry_sdk import capture_exception, capture_message  # type:ignore
+from sentry_sdk import capture_exception, capture_message  # type: ignore
 
-from .current_weather import get_current_weather, \
-                             get_current_weather_last_update
+from .current_weather import get_current_weather, get_current_weather_last_update
 from .image import load_image
 from .sonos import SonosHandler
-from .trains import get_trains_message, get_trains_from_london, \
-                    get_trains_to_london
+from .trains import get_trains_message, get_trains_from_london, get_trains_to_london
 from .house_temperature import get_house_temperature
 from .solar import get_current_solar, is_solar_valid
 from .water_gas import get_water_gas
@@ -37,6 +35,7 @@ def handle_error(func):
             self.end_headers()
 
             self.wfile.write(f"Exception Occurred.\n".encode("utf8"))
+
     return r
 
 
@@ -98,7 +97,7 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
 
     @handle_error
     def do_POST(self) -> None:
-        file_length = int(self.headers['Content-Length'])
+        file_length = int(self.headers["Content-Length"])
         data = BytesIO()
         data.write(self.rfile.read(file_length))
 
@@ -128,8 +127,11 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
             return "sonos_quick"
 
         screens = self.get_screens()
-        idx = [idx for (screen, idx) in zip(screens, range(len(screens)))
-               if screen == current]
+        idx = [
+            idx
+            for (screen, idx) in zip(screens, range(len(screens)))
+            if screen == current
+        ]
         if len(idx) == 0:
             return screens[0]
         return screens[(idx[0] + 1) % len(screens)]
@@ -137,8 +139,12 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
     def get_screens(self) -> List[str]:
         now = datetime.now(tz=ZoneInfo("Europe/London"))
 
-        if now.hour < 6 or (now.hour == 6 and now.minute < 20) or \
-           (now.hour == 22 and now.minute >= 30) or now.hour > 22:
+        if (
+            now.hour < 6
+            or (now.hour == 6 and now.minute < 20)
+            or (now.hour == 22 and now.minute >= 30)
+            or now.hour > 22
+        ):
             return ["blackout"]
 
         r = ["clock", "house_temperature", "air_quality"]
@@ -177,7 +183,7 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
             "artist": track.artist,
             "album": track.album,
             "track": track.title,
-            "album_art": SONOS.get_current_album_art() is not None
+            "album_art": SONOS.get_current_album_art() is not None,
         }
 
     def image(self, image_data) -> Any:
@@ -196,16 +202,10 @@ class SmartDisplayHandler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(image_data)
 
     def trains_to_london(self) -> Any:
-        return {
-            "msg": get_trains_message(),
-            "trains": get_trains_to_london()
-        }
+        return {"msg": get_trains_message(), "trains": get_trains_to_london()}
 
     def trains_from_london(self) -> Any:
-        return {
-            "msg": get_trains_message(),
-            "trains": get_trains_from_london()
-        }
+        return {"msg": get_trains_message(), "trains": get_trains_from_london()}
 
     def log(self, data: str) -> Any:
         sys.stdout.write(data)

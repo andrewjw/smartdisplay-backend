@@ -16,7 +16,7 @@ def load_image(art_uri: str) -> Optional[bytes]:
         return None
 
     image_data: List[int] = []
-    with Image.open(open("images/"+art_uri, "rb")) as im:
+    with Image.open(open("images/" + art_uri, "rb")) as im:
         if im.width > 64 or im.height > 64:
             try:
                 im.thumbnail((64, 64), Image.Resampling.NEAREST)

@@ -2,7 +2,7 @@ from datetime import datetime, UTC
 import time
 from typing import Dict, Tuple
 
-from prometheus_api_client import PrometheusConnect  # type:ignore
+from prometheus_api_client import PrometheusConnect  # type: ignore
 
 IMPORT_QUERY = """
 increase(glowprom_import_cumulative_Wh{type="electric"}[24h])
@@ -43,17 +43,16 @@ def get_current_solar() -> Dict[str, float | str]:
         "house_cost": _get_query(prom, HOUSE_COST),
         "car_cost": _get_query(prom, CAR_COST),
         "pv_power": _get_metric(prom, "foxess_pvPower"),
-        "pv_generation":
-            _get_query(prom,
-                       "increase(foxess_pv_generation_total"
-                       + f"[{since_midnight}m])"),
+        "pv_generation": _get_query(
+            prom, "increase(foxess_pv_generation_total" + f"[{since_midnight}m])"
+        ),
         "battery": _get_metric(prom, "foxess_SoC"),
         "house_load": _get_metric(prom, "foxess_loadsPower"),
         "current_power": _get_metric(prom, "glowprom_power_W"),
-        "battery_change":
-            _get_query(prom,
-                       "foxess_batChargePower - foxess_batDischargePower")
-            * 1000
+        "battery_change": _get_query(
+            prom, "foxess_batChargePower - foxess_batDischargePower"
+        )
+        * 1000,
     }
 
 

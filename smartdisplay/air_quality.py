@@ -1,6 +1,6 @@
 from typing import Dict
 
-from prometheus_api_client import PrometheusConnect  # type:ignore
+from prometheus_api_client import PrometheusConnect  # type: ignore
 
 
 def get_air_quality() -> Dict[str, float | str]:
@@ -8,9 +8,9 @@ def get_air_quality() -> Dict[str, float | str]:
 
     co2: float = _get_query(prom, "avg_over_time(bge_co2[5m])")
     voc = _get_query(prom, "avg_over_time(bge_voc[5m])")
-    pm25 = _get_query(prom,
-                      "avg_over_time("
-                      + "bge_airqual_standard{psize=\"2.5\"}[10m])")
+    pm25 = _get_query(
+        prom, "avg_over_time(" + 'bge_airqual_standard{psize="2.5"}[10m])'
+    )
 
     if co2 < 500:
         co2_level = "Great"
@@ -63,7 +63,7 @@ def get_air_quality() -> Dict[str, float | str]:
         "voc": voc_text,
         "voc_level": voc_level,
         "pm25": f"{int(pm25)} ug/m3",
-        "pm25_level": pm25_level
+        "pm25_level": pm25_level,
     }
 
 

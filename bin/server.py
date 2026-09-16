@@ -4,7 +4,7 @@ import socketserver
 import os
 import sys
 
-import sentry_sdk  # type:ignore
+import sentry_sdk  # type: ignore
 
 from smartdisplay import SmartDisplayHandler
 
@@ -18,8 +18,7 @@ def main(port) -> None:
 
     while True:
         try:
-            with socketserver.TCPServer(("", port),
-                                        SmartDisplayHandler) as httpd:
+            with socketserver.TCPServer(("", port), SmartDisplayHandler) as httpd:
                 httpd.allow_reuse_address = True
                 print("serving at port", port)
                 httpd.serve_forever()
