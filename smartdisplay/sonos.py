@@ -167,6 +167,7 @@ def sonos_watcher(device_name: str,
                     break
 
                 if event.variables.get("transport_state", None) != "PLAYING":
+                    print(f"sonos not playing. {event.variables.get("transport_state", None)}")
                     handler.track_info = None
                     continue
                 if "current_track_meta_data" in event.variables \
@@ -178,6 +179,8 @@ def sonos_watcher(device_name: str,
                         devices["Kitchen"])
                     handler.track_info = track_info
                     print("sonos", track_info)
+                else:
+                    print(f"sonos playing but no current track. {event.variables.get("transport_state", None)} {event.variables.get("current_track_meta_data", None)}")
             except queue.Empty:
                 pass
     except Exception as e:
