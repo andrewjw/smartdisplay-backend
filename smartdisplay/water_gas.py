@@ -4,7 +4,7 @@ from prometheus_api_client import PrometheusConnect  # type: ignore
 
 
 def get_water_gas() -> Dict[str, float | str]:
-    prom = PrometheusConnect(url="http://192.168.1.207:9090")
+    prom = PrometheusConnect(url="http://192.168.1.207:9090", timeout=10)
 
     return {
         "water_day": _get_query(prom, "increase(watermeter_count[24h])"),

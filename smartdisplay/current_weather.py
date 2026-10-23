@@ -9,7 +9,7 @@ RAIN_QUERY = 'increase(prom433_rain{model="Fineoffset-WS90"}[%s])'
 
 
 def get_current_weather_last_update() -> float:
-    prom = PrometheusConnect(url="http://192.168.1.207:9090")
+    prom = PrometheusConnect(url="http://192.168.1.207:9090", timeout=10)
 
     last_message = _get_weather_metric(prom, "last_message")
     if last_message is None:
@@ -19,7 +19,7 @@ def get_current_weather_last_update() -> float:
 
 
 def get_current_weather() -> Dict[str, float | str | None]:
-    prom = PrometheusConnect(url="http://192.168.1.207:9090")
+    prom = PrometheusConnect(url="http://192.168.1.207:9090", timeout=10)
 
     pressure, pressure_change, pressure_text = get_pressure(prom)
 

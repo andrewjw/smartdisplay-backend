@@ -4,7 +4,7 @@ from prometheus_api_client import PrometheusConnect  # type: ignore
 
 
 def get_air_quality() -> Dict[str, float | str]:
-    prom = PrometheusConnect(url="http://192.168.1.207:9090")
+    prom = PrometheusConnect(url="http://192.168.1.207:9090", timeout=10)
 
     co2: float = _get_query(prom, "avg_over_time(bge_co2[5m])")
     voc = _get_query(prom, "avg_over_time(bge_voc[5m])")

@@ -6,7 +6,7 @@ ROOMS = ["lounge", "kitchen", "mainbedroom", "alexbedroom", "harrietbedroom", "o
 
 
 def get_house_temperature() -> Dict[str, float]:
-    prom = PrometheusConnect(url="http://192.168.1.207:9090")
+    prom = PrometheusConnect(url="http://192.168.1.207:9090", timeout=10)
 
     labels = {"model": "Fineoffset-WS90"}
     outside = prom.get_current_metric_value(

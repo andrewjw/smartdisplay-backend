@@ -22,7 +22,7 @@ CAR_COST = "sum(delta(teslamate_home_cost_total[24h]))"
 
 
 def is_solar_valid() -> bool:
-    prom = PrometheusConnect(url="http://192.168.1.207:9090")
+    prom = PrometheusConnect(url="http://192.168.1.207:9090", timeout=10)
 
     try:
         _get_metric(prom, "foxess_pvPower")
@@ -32,7 +32,7 @@ def is_solar_valid() -> bool:
 
 
 def get_current_solar() -> Dict[str, float | str]:
-    prom = PrometheusConnect(url="http://192.168.1.207:9090")
+    prom = PrometheusConnect(url="http://192.168.1.207:9090", timeout=10)
 
     time = datetime.now(tz=UTC).time()
     since_midnight = time.hour * 60 + time.minute
