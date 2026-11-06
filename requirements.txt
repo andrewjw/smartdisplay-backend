@@ -1,4 +1,4 @@
-soco==0.32.0
+soco==0.32.2
 pillow==13.0.0
 requests==2.34.2
 types-requests==2.33.0.20261006
