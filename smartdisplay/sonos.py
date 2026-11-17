@@ -91,10 +91,15 @@ def topology_watcher(handler: "SonosHandler", terminator: Terminator) -> None:
 
         devices = {}
         while "Kitchen" not in devices:
+<<<<<<< HEAD
             devices = {
                 device.player_name: device for device in soco.discover(timeout=60)
             }
         print(f"sonos got Kitchen")
+=======
+            devices = {device.player_name: device
+                       for device in soco.discover(timeout=60)}
+>>>>>>> a5637a0 (Improve logging.)
 
         kitchen = devices["Kitchen"]
         # sub = soco.services.ZoneGroupTopology(kitchen)
@@ -103,9 +108,9 @@ def topology_watcher(handler: "SonosHandler", terminator: Terminator) -> None:
         thread: threading.Thread | None = None
 
         while not terminator.is_terminated():
-            print("Checking topology...")
+            sys.stderr.write("Checking topology...\n")
             coordinator = kitchen.group.coordinator.player_name
-            print(f"{coordinator} is coordinator")
+            sys.stderr.write(f"{coordinator} is coordinator\n")
 
             if thread is not None and not thread.is_alive():
                 last_coordinator = None
@@ -116,14 +121,21 @@ def topology_watcher(handler: "SonosHandler", terminator: Terminator) -> None:
                 or subterminator.has_timed_out()
             ):
                 if last_coordinator is not None:
+<<<<<<< HEAD
                     timed_out = subterminator is None or subterminator.has_timed_out()
                     print(
                         f"Stopping sonos_watcher for {last_coordinator}. "
                         + f"Has timed out: {timed_out}"
                     )
+=======
+                    timed_out = subterminator is None \
+                        or subterminator.has_timed_out()
+                    sys.stderr.write(f"Stopping sonos_watcher for {last_coordinator}. " +
+                          f"Has timed out: {timed_out}\n")
+>>>>>>> a5637a0 (Improve logging.)
                     if subterminator is not None:
                         subterminator.terminate()
-                print(f"Starting sonos_watcher for {coordinator}")
+                sys.stderr.write(f"Starting sonos_watcher for {coordinator}\n")
                 last_coordinator = coordinator
                 subterminator = Terminator(coordinator)
                 thread = threading.Thread(
@@ -139,7 +151,7 @@ def topology_watcher(handler: "SonosHandler", terminator: Terminator) -> None:
         sys.stderr.flush()
         capture_exception(e)
     finally:
-        print(f"Topology watcher is shutting down!")
+        sys.stderr.write(f"Topology watcher is shutting down!\n")
         if subterminator is not None:
             subterminator.terminate()
 
@@ -152,10 +164,16 @@ def sonos_watcher(
 
     try:
         while device_name not in devices:
+<<<<<<< HEAD
             devices = {
                 device.player_name: device for device in soco.discover(timeout=60)
             }
         print(f"sonos got {device_name}")
+=======
+            devices = {device.player_name: device
+                       for device in soco.discover(timeout=60)}
+        sys.stderr.write(f"sonos got {device_name}\n")
+>>>>>>> a5637a0 (Improve logging.)
 
         subscription = soco.services.AVTransport(devices[device_name]).subscribe(
             auto_renew=True
@@ -166,10 +184,15 @@ def sonos_watcher(
                 event = subscription.events.get(timeout=5)
 
                 terminator.update()
+<<<<<<< HEAD
                 print(
                     f"subscription for {device_name} has "
                     + f"{subscription.time_left}s left."
                 )
+=======
+                sys.stderr.write(f"subscription for {device_name} has "
+                      + f"{subscription.time_left}s left.\n")
+>>>>>>> a5637a0 (Improve logging.)
                 if subscription.time_left <= 0:
                     break
 
@@ -189,11 +212,15 @@ def sonos_watcher(
                         meta_data.to_dict(), devices["Kitchen"]
                     )
                     handler.track_info = track_info
+<<<<<<< HEAD
                     print("sonos", track_info)
                 else:
                     print(
                         f"sonos playing but no current track. {event.variables.get("transport_state", None)} {event.variables.get("current_track_meta_data", None)}"
                     )
+=======
+                    sys.stderr.write(f"sonos: {track_info}\n")
+>>>>>>> a5637a0 (Improve logging.)
             except queue.Empty:
                 pass
     except Exception as e:
@@ -202,7 +229,7 @@ def sonos_watcher(
         sys.stderr.flush()
         capture_exception(e)
     finally:
-        print(f"Sonos watcher for {device_name} is shutting down!")
+        sys.stderr.write(f"Sonos watcher for {device_name} is shutting down!\n")
         handler.track_info = None
         if subscription is not None:
             try:
@@ -287,7 +314,7 @@ class TrackInfo:
                 self.album_art_header = None
                 self.album_art_image = None
         else:
-            print("no album art url :-(")
+            sys.stderr.write("no album art url :-(\n")
             self.album_art_header = None
             self.album_art_image = None
 
@@ -321,7 +348,7 @@ class SonosHandler:
         self._last_display_time: Optional[datetime] = None
 
         self._terminator = Terminator("TopologyWatcher")
-        print("starting sonos watcher")
+        sys.stderr.write("starting sonos watcher\n")
         self._thread = threading.Thread(
             target=topology_watcher,
             args=(
@@ -333,7 +360,7 @@ class SonosHandler:
         self._thread.start()
 
     def __del__(self):
-        print("SonosHandler shutting down...")
+        sys.stderr.write("SonosHandler shutting down...\n")
         self._terminator.terminate()
         if self._thread.is_alive():
             self._thread.join(timeout=5)
@@ -434,7 +461,7 @@ def get_album_art(art_uri: str, header: bool) -> Optional[bytes]:
                 image_data.extend([0, 0, 0] * xafter)
         if yafter > 0:
             image_data.extend([0, 0, 0] * 64 * yafter)
-    sys.stdout.write(f"Album art size: {len(image_data)}\n")
+    sys.stderr.write(f"Album art size: {len(image_data)}\n")
     return struct.pack("B" * (expected_size), *image_data)
 
 
@@ -453,11 +480,11 @@ if __name__ == "__main__":
 
     while True:
         if handler.has_track_changed():
-            print("Track changed:", handler.track_info)
+            sys.stderr.write(f"Track changed: {handler.track_info}\n")
         elif handler.show_quick():
-            print("Show quick:", handler.track_info)
+            sys.stderr.write(f"Show quick: {handler.track_info}\n")
         else:
-            print("No change:", handler.track_info)
+            sys.stderr.write(f"No change: {handler.track_info}\n")
 
-        sys.stdout.flush()
+        sys.stderr.flush()
         time.sleep(5)
