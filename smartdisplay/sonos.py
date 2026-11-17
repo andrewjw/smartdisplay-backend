@@ -77,7 +77,7 @@ class Terminator:
         return (datetime.now(UTC) - self.last_update).total_seconds() > 60 * 15
 
     def terminate(self) -> None:
-        print(f"Terminating {self.device_name}!")
+        sys.stderr.write(f"Terminating {self.device_name}!\n")
         self._terminate = True
 
     def is_terminated(self) -> bool:
@@ -91,15 +91,9 @@ def topology_watcher(handler: "SonosHandler", terminator: Terminator) -> None:
 
         devices = {}
         while "Kitchen" not in devices:
-<<<<<<< HEAD
             devices = {
                 device.player_name: device for device in soco.discover(timeout=60)
             }
-        print(f"sonos got Kitchen")
-=======
-            devices = {device.player_name: device
-                       for device in soco.discover(timeout=60)}
->>>>>>> a5637a0 (Improve logging.)
 
         kitchen = devices["Kitchen"]
         # sub = soco.services.ZoneGroupTopology(kitchen)
@@ -121,18 +115,11 @@ def topology_watcher(handler: "SonosHandler", terminator: Terminator) -> None:
                 or subterminator.has_timed_out()
             ):
                 if last_coordinator is not None:
-<<<<<<< HEAD
                     timed_out = subterminator is None or subterminator.has_timed_out()
-                    print(
+                    sys.stderr.write(
                         f"Stopping sonos_watcher for {last_coordinator}. "
-                        + f"Has timed out: {timed_out}"
+                        + f"Has timed out: {timed_out}\n"
                     )
-=======
-                    timed_out = subterminator is None \
-                        or subterminator.has_timed_out()
-                    sys.stderr.write(f"Stopping sonos_watcher for {last_coordinator}. " +
-                          f"Has timed out: {timed_out}\n")
->>>>>>> a5637a0 (Improve logging.)
                     if subterminator is not None:
                         subterminator.terminate()
                 sys.stderr.write(f"Starting sonos_watcher for {coordinator}\n")
@@ -164,16 +151,10 @@ def sonos_watcher(
 
     try:
         while device_name not in devices:
-<<<<<<< HEAD
             devices = {
                 device.player_name: device for device in soco.discover(timeout=60)
             }
-        print(f"sonos got {device_name}")
-=======
-            devices = {device.player_name: device
-                       for device in soco.discover(timeout=60)}
         sys.stderr.write(f"sonos got {device_name}\n")
->>>>>>> a5637a0 (Improve logging.)
 
         subscription = soco.services.AVTransport(devices[device_name]).subscribe(
             auto_renew=True
@@ -184,21 +165,16 @@ def sonos_watcher(
                 event = subscription.events.get(timeout=5)
 
                 terminator.update()
-<<<<<<< HEAD
-                print(
+                sys.stderr.write(
                     f"subscription for {device_name} has "
-                    + f"{subscription.time_left}s left."
+                    + f"{subscription.time_left}s left.\n"
                 )
-=======
-                sys.stderr.write(f"subscription for {device_name} has "
-                      + f"{subscription.time_left}s left.\n")
->>>>>>> a5637a0 (Improve logging.)
                 if subscription.time_left <= 0:
                     break
 
                 if event.variables.get("transport_state", None) != "PLAYING":
-                    print(
-                        f"sonos not playing. {event.variables.get("transport_state", None)}"
+                    sys.stderr.write(
+                        f"sonos not playing. {event.variables.get("transport_state", None)}\n"
                     )
                     handler.track_info = None
                     continue
@@ -207,20 +183,16 @@ def sonos_watcher(
                     and event.variables["current_track_meta_data"] != ""
                 ):
                     meta_data = event.variables["current_track_meta_data"]
-                    print("sonos", meta_data.to_dict())
+                    sys.stderr.write(f"sonos: {meta_data.to_dict()}\n")
                     track_info = process_event_track_metadata(
                         meta_data.to_dict(), devices["Kitchen"]
                     )
                     handler.track_info = track_info
-<<<<<<< HEAD
-                    print("sonos", track_info)
-                else:
-                    print(
-                        f"sonos playing but no current track. {event.variables.get("transport_state", None)} {event.variables.get("current_track_meta_data", None)}"
-                    )
-=======
                     sys.stderr.write(f"sonos: {track_info}\n")
->>>>>>> a5637a0 (Improve logging.)
+                else:
+                    sys.stderr.write(
+                        f"sonos playing but no current track. {event.variables.get("transport_state", None)} {event.variables.get("current_track_meta_data", None)}\n"
+                    )
             except queue.Empty:
                 pass
     except Exception as e:
