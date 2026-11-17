@@ -1,6 +1,6 @@
 from datetime import datetime
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 from nredarwin.webservice import DarwinLdbSession, StationBoard  # type: ignore
 
@@ -9,9 +9,14 @@ DARWIN = DarwinLdbSession(
     + "OpenLDBWS/wsdl.aspx?ver=2021-11-01"
 )
 
-NORTH_STATIONS = set(
-    ["Royston", "Stevenage", "Cambridge", "Peterborough", "Letchworth Garden City"]
-)
+NORTH_STATIONS = set([
+    "Welwyn Garden City",
+    "Royston",
+    "Stevenage",
+    "Cambridge",
+    "Peterborough",
+    "Letchworth Garden City"
+])
 
 SOUTH_STATIONS = set(
     [
@@ -38,82 +43,68 @@ HTML_RE = re.compile(r"<[^>]+?>")
 
 
 class BoardCache:
-    def __init__(self, departures: bool) -> None:
+    def __init__(self, departures: bool, stations: Set[str]) -> None:
         self.departures = departures
         self.last_update: Optional[datetime] = None
-        self.board: Optional[StationBoard] = None
+        self.board: List[Dict[str, str | bool]] = []
+        self.stations = stations
 
     def get(self) -> StationBoard:
-        if (
-            self.last_update is None
-            or (datetime.utcnow() - self.last_update).total_seconds() > 300
-        ):
-            self.board = DARWIN.get_station_board(
-                crs="WGC",
-                include_departures=self.departures,
-                include_arrivals=not self.departures,
-            )
+        if self.last_update is None \
+           or (datetime.utcnow() - self.last_update).total_seconds() > 300:
+            board = DARWIN.get_station_board(
+                                    crs='WGC',
+                                    include_departures=self.departures,
+                                    include_arrivals=not self.departures)
             self.last_update = datetime.utcnow()
+
+            self.board = []
+            for train in board.train_services:
+                if train.destination_text in self.stations:
+                    continue
+                details = DARWIN.get_service_details(train.service_id)
+                self.board.append({
+                    "destination": train.origin_text,
+                    "platform": train.platform,
+                    "scheduled": train.sta,
+                    "eta": train.eta,
+                    "is_late": _is_late(train.sta, train.eta),
+                    "message": details.disruption_reason or details.overdue_message
+                })
         return self.board
 
 
-DEPARTURE_BOARD = BoardCache(True)
-ARRIVALS_BOARD = BoardCache(False)
+DEPARTURE_BOARD = BoardCache(True, SOUTH_STATIONS)
+ARRIVALS_BOARD = BoardCache(False, NORTH_STATIONS)
 
 
 def get_trains_to_london() -> List[Dict[str, str | bool]]:
-    board = DEPARTURE_BOARD.get()
-
-    r: List[Dict[str, str | bool]] = []
-
-    for train in board.train_services:
-        if train.destination_text in NORTH_STATIONS:
-            continue
-        r.append(
-            {
-                "destination": train.destination_text,
-                "platform": train.platform,
-                "scheduled": train.std,
-                "eta": train.etd,
-                "is_late": _is_late(train.std, train.etd),
-            }
-        )
-
-    return r
+    return DEPARTURE_BOARD.get()
 
 
 def get_trains_from_london() -> List[Dict[str, str | bool]]:
-    board = ARRIVALS_BOARD.get()
+    return ARRIVALS_BOARD.get()
 
-    r: List[Dict[str, str | bool]] = []
 
-    for train in board.train_services:
-        if train.destination_text in SOUTH_STATIONS:
-            continue
-        details = DARWIN.get_service_details(train.service_id)
-        r.append(
-            {
-                "destination": train.origin_text,
-                "platform": train.platform,
-                "scheduled": train.sta,
-                "eta": train.eta,
-                "is_late": _is_late(train.sta, train.eta),
-                "message": details.disruption_reason or details.overdue_message,
-            }
-        )
-
-    return r
-
+TRAINS_MESSAGE: Optional[str] = None
+TRAINS_MESSAGE_LAST_UPDATE: Optional[datetime] = None
 
 def get_trains_message() -> Optional[str]:
-    msg = " ".join(DEPARTURE_BOARD.get().nrcc_messages)
-
-    msg = HTML_RE.sub("", msg)
+    global TRAINS_MESSAGE, TRAINS_MESSAGE_LAST_UPDATE
+    msg = None
+    if TRAINS_MESSAGE_LAST_UPDATE is None \
+       or (datetime.utcnow() - TRAINS_MESSAGE_LAST_UPDATE).total_seconds() > 300:
+        TRAINS_MESSAGE_LAST_UPDATE = datetime.utcnow()
+        TRAINS_MESSAGE = " ".join(DEPARTURE_BOARD.get().nrcc_messages)
+        
+    msg = HTML_RE.sub("", TRAINS_MESSAGE)
     msg = msg.replace("\n", " ")
     while "  " in msg:
         msg = msg.replace("  ", " ")
     msg = msg.replace(" More details can be found in Latest Travel News.", "")
-    msg = msg.replace(" Latest information can be found in Status and Disruptions.", "")
+    msg = msg.replace(
+        " Latest information can be found in Status and Disruptions.", "")
+    msg = msg.replace(" Please speak to station staff for further assistance.", "")
     return msg.strip()
 
 
